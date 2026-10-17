@@ -19,10 +19,15 @@ const N = Number(process.argv[2] ?? 300_000);
 const TARGET = 0.96;
 const out: Record<string, { scale: number; buyPrice: number; rtp: number; hit: number; fsEvery: number; buyEv: number }> = {};
 
-for (const t of THEMES) {
+const only = process.argv[3]?.split(",");
+const prev = JSON.parse((await import("node:fs")).readFileSync(new URL("../server/src/games/videoslots.calib.json", import.meta.url), "utf8"));
+const jobs = THEMES.flatMap((t) => (t.variants ? t.variants.map((v) => ({ t, v })) : [{ t, v: undefined as string | undefined }]));
+for (const { t, v } of jobs) {
+  const key = __internals.calibKey(t, v);
+  if (only && !only.some((o) => key.startsWith(o))) continue;
   let total = 0, scat = 0, hits = 0, fs = 0;
   for (let i = 0; i < N; i++) {
-    const r = __internals.playTheme(t, rng, false, 1);
+    const r = __internals.playTheme(t, rng, false, 1, v);
     total += r.multiplier;
     const spins = [r.base!, ...r.free];
     scat += spins.reduce((a, s) => a + s.scatter.mult, 0);
@@ -34,17 +39,17 @@ for (const t of THEMES) {
   let scale = (TARGET - b) / a;
   // refinamento: mede de novo na escala estimada e corrige (a variância dos bônus é alta)
   let check = 0;
-  for (let i = 0; i < N; i++) check += __internals.playTheme(t, rng, false, scale).multiplier;
+  for (let i = 0; i < N; i++) check += __internals.playTheme(t, rng, false, scale, v).multiplier;
   check /= N;
   scale = +(scale * ((TARGET - b) / Math.max(0.2, check - b))).toFixed(4);
   check = 0;
-  for (let i = 0; i < N / 2; i++) check += __internals.playTheme(t, rng, false, scale).multiplier;
+  for (let i = 0; i < N / 2; i++) check += __internals.playTheme(t, rng, false, scale, v).multiplier;
   let buy = 0;
   const NB = Math.floor(N / 15);
-  for (let i = 0; i < NB; i++) buy += __internals.playTheme(t, rng, true, scale).multiplier;
+  for (let i = 0; i < NB; i++) buy += __internals.playTheme(t, rng, true, scale, v).multiplier;
   const buyEv = buy / NB;
-  out[t.id] = { scale, buyPrice: Math.max(20, Math.round(buyEv / 0.965)), rtp: +(check / (N / 2)).toFixed(4), hit: +(hits / N).toFixed(3), fsEvery: Math.round(N / Math.max(1, fs)), buyEv: +buyEv.toFixed(1) };
-  console.log(t.id.padEnd(13), JSON.stringify(out[t.id]));
+  out[key] = { scale, buyPrice: Math.max(20, Math.round(buyEv / 0.965)), rtp: +(check / (N / 2)).toFixed(4), hit: +(hits / N).toFixed(3), fsEvery: Math.round(N / Math.max(1, fs)), buyEv: +buyEv.toFixed(1) };
+  console.log(key.padEnd(16), JSON.stringify(out[key]));
 }
-writeFileSync(new URL("../server/src/games/videoslots.calib.json", import.meta.url), JSON.stringify(Object.fromEntries(Object.entries(out).map(([k, v]) => [k, { scale: v.scale, buyPrice: v.buyPrice }])), null, 2) + "\n");
+writeFileSync(new URL("../server/src/games/videoslots.calib.json", import.meta.url), JSON.stringify({ ...prev, ...Object.fromEntries(Object.entries(out).map(([k, v]) => [k, { scale: v.scale, buyPrice: v.buyPrice }])) }, null, 2) + "\n");
 console.log("\nCalibração gravada.");

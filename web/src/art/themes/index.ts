@@ -2,6 +2,10 @@ import type { ReactNode } from "react";
 import { FARAO, GEMAS, SAVANA } from "./themesA";
 import { DRAGAO, FLORESTA, PIRATAS } from "./themesB";
 import { ARTICO, ASTECA, CYBER, OLIMPO } from "./themesC";
+import { NILO, SAMURAI, TIGRE, VAMPIRO, VIKINGS } from "./themesD";
+import { CELTA, CORUJA, LUA, OESTE, RECIFE } from "./themesE";
+import { DOCES, GELO, INCA, MINOTAURO, SAFARI } from "./themesF";
+import { CARNAVAL, FAZENDA, KRAKEN, ROBOS, ROMANO } from "./themesG";
 
 export type SlotThemeMeta = {
   id: string;
@@ -103,4 +107,59 @@ export const SLOT_THEMES: Record<string, SlotThemeMeta> = {
     featureTitle: "LOBOS MULTIPLICADORES", featureDesc: "Nos giros grátis cada Lobo (Wild) uiva com um multiplicador de 2x a 10x, somado na linha.",
     tile: ["#0c4a6e", "#312e81"], icon: 0, lineColors: ["#bae6fd", "#a5b4fc", "#86efac", "#f0abfc", "#e0f2fe"],
   },
+  ...wave2(),
 };
+
+/** Metadados dos 20 slots da Onda 2 a partir de uma paleta (fundo, moldura e brilho). */
+function mk(
+  id: string,
+  art: Record<number, ReactNode>,
+  [top, bottom, dark]: [string, string, string],
+  [f1, f2, f3]: [string, string, string],
+  accent: string,
+  featureTitle: string,
+  featureDesc: string,
+  icon = 0,
+): SlotThemeMeta {
+  return {
+    id,
+    art,
+    bg: `radial-gradient(80% 50% at 50% 0%, ${top}66, transparent 70%), radial-gradient(60% 40% at 50% 100%, ${bottom}55, transparent 70%), linear-gradient(180deg,${dark},#030208)`,
+    frame: `linear-gradient(180deg,${f1},${f2} 50%,${f3})`,
+    inner: dark,
+    accent,
+    title: `linear-gradient(180deg,#ffffff,${accent} 50%,${f3})`,
+    cell: "rounded-xl bg-gradient-to-b from-white/[0.07] to-transparent",
+    featureTitle,
+    featureDesc,
+    tile: [top, dark],
+    icon,
+    lineColors: [accent, f1, f2, "#ffffff", top],
+  };
+}
+
+function wave2(): Record<string, SlotThemeMeta> {
+  const list = [
+    mk("vs-nilo", NILO, ["#0891b2", "#ca8a04", "#04161c"], ["#fde68a", "#0891b2", "#a16207"], "#67e8f9", "DOIS SÍMBOLOS ESPECIAIS", "Nos giros grátis DOIS símbolos especiais são sorteados. Cada um expande e paga em todas as 20 linhas.", 2),
+    mk("vs-tigre", TIGRE, ["#ea580c", "#b91c1c", "#1c0804"], ["#fde68a", "#ea580c", "#7f1d1d"], "#fbbf24", "TIGRES ATÉ 25X", "Nos giros grátis cada Tigre (Wild) traz 2x, 3x, 5x, 10x ou 25x. Na mesma linha, os multiplicadores se somam."),
+    mk("vs-vikings", VIKINGS, ["#0284c7", "#78350f", "#06121f"], ["#e0f2fe", "#0369a1", "#78350f"], "#7dd3fc", "BERSERKERS EM MARCHA", "Nos giros grátis cada Berserker (Wild) avança um rolo para a esquerda a cada giro, até sair da tela."),
+    mk("vs-vampiro", VAMPIRO, ["#be123c", "#4c1d95", "#14040a"], ["#fecdd3", "#be123c", "#3b0764"], "#fb7185", "MORDIDA DO VAMPIRO", "Nos giros grátis cada Vampiro (Wild) morde: as casas vizinhas (acima, abaixo e dos lados) também viram Wild."),
+    mk("vs-samurai", SAMURAI, ["#dc2626", "#0f172a", "#120507"], ["#fecaca", "#b91c1c", "#1c1917"], "#f87171", "CORTE DA KATANA", "Nos giros grátis a katana corta de 1 a 3 símbolos: cada um vale 2x ou 3x em toda linha que formar, e os cortes se multiplicam."),
+    mk("vs-oeste", OESTE, ["#d97706", "#7c2d12", "#170c03"], ["#fde68a", "#d97706", "#7c2d12"], "#fbbf24", "RECOMPENSA DO XERIFE", "Sacos de ouro trazem valores em dinheiro. Quando o Xerife (Wild) aparece, ele coleta todos. Nos giros grátis cada Xerife coleta de novo!"),
+    mk("vs-coruja", CORUJA, ["#7c3aed", "#1e1b4b", "#0b0718"], ["#e9d5ff", "#7c3aed", "#1e1b4b"], "#c4b5fd", "MULTIPLICADOR DA NOITE", "Nos giros grátis o multiplicador começa em x1 e sobe +1 a cada giro com vitória. Ele nunca volta."),
+    mk("vs-recife", RECIFE, ["#06b6d4", "#e11d48", "#03141a"], ["#cffafe", "#0891b2", "#9f1239"], "#67e8f9", "PESCARIA DO RECIFE", "Peixes dourados trazem valores em dinheiro. O Pescador (Wild) fisga todos. Nos giros grátis cada Pescador coleta de novo!"),
+    mk("vs-lua", LUA, ["#6366f1", "#c7d2fe", "#07081c"], ["#ffffff", "#818cf8", "#312e81"], "#c7d2fe", "ORBES LUNARES", "Orbes com 2x a 100x podem cair em qualquer giro. Os valores somam e multiplicam o ganho do giro (mais orbes nos giros grátis).", 2),
+    mk("vs-celta", CELTA, ["#16a34a", "#ca8a04", "#03140a"], ["#bbf7d0", "#16a34a", "#a16207"], "#86efac", "DUENDES EXPANSIVOS", "O Duende (Wild) ocupa o rolo inteiro sempre que aparece. Nos giros grátis todos os ganhos valem x3.", 2),
+    mk("vs-gelo", GELO, ["#7c3aed", "#0ea5e9", "#0a0718"], ["#e0f2fe", "#7c3aed", "#0c4a6e"], "#a5b4fc", "FOGO OU GELO", "Escolha antes de girar: FOGO dá Dragões (Wild) com 2x a 10x nos giros grátis; GELO deixa os Dragões presos até o fim do bônus."),
+    mk("vs-inca", INCA, ["#d97706", "#047857", "#140b02"], ["#fde68a", "#d97706", "#065f46"], "#fbbf24", "RELÍQUIA ESCOLHIDA", "Você escolhe o símbolo sagrado antes de girar. Nos giros grátis ele expande e paga em todas as 20 linhas. Cada escolha tem o mesmo retorno; os símbolos altos pagam mais e aparecem menos.", 2),
+    mk("vs-safari", SAFARI, ["#ca8a04", "#1e3a8a", "#0a0803"], ["#fde68a", "#a16207", "#1e1b4b"], "#fde047", "OLHOS NA ESCURIDÃO", "Em cada giro grátis, de 1 a 4 pares de olhos brilham no escuro e viram Wild em posições aleatórias."),
+    mk("vs-doces", DOCES, ["#ec4899", "#22d3ee", "#12061a"], ["#fbcfe8", "#ec4899", "#0e7490"], "#f9a8d4", "BOMBAS DOCES", "Bombas de 2x a 100x podem cair em qualquer giro. Os valores somam e multiplicam o ganho do giro (mais bombas nos giros grátis).", 2),
+    mk("vs-minotauro", MINOTAURO, ["#b45309", "#7f1d1d", "#120806"], ["#fde68a", "#92400e", "#450a0a"], "#fbbf24", "TRILHA DO LABIRINTO", "Em cada giro grátis Teseu avança de 1 a 3 casas no labirinto de 30 casas e ganha o prêmio de onde parar. Quanto mais fundo, maiores os prêmios; o centro guarda o maior de todos."),
+    mk("vs-romano", ROMANO, ["#7c3aed", "#b91c1c", "#0d0716"], ["#fde68a", "#b91c1c", "#4c1d95"], "#fde047", "DUELO NA ARENA", "No fim dos giros grátis o Gladiador duela até 4 vezes: cada vitória soma +1 ao multiplicador do bônus (até x5). A primeira derrota encerra o duelo."),
+    mk("vs-fazenda", FAZENDA, ["#65a30d", "#dc2626", "#0a1204"], ["#fef08a", "#65a30d", "#991b1b"], "#bef264", "COLHEITA PRESA", "Nos giros grátis cada Espantalho (Wild) fica preso no lugar até o fim do bônus."),
+    mk("vs-robos", ROBOS, ["#0ea5e9", "#f59e0b", "#060c16"], ["#e0f2fe", "#0369a1", "#c2410c"], "#7dd3fc", "MECHAS CRESCENTES", "Nos giros grátis cada Mecha (Wild) fica preso e cresce uma casa no próprio rolo a cada giro, até ocupar o rolo inteiro."),
+    mk("vs-kraken", KRAKEN, ["#0d9488", "#be185d", "#02110f"], ["#a5f3fc", "#0d9488", "#831843"], "#5eead4", "TENTÁCULOS DO KRAKEN", "O Kraken (Wild) estica os tentáculos e ocupa o rolo inteiro. Nos giros grátis todos os ganhos valem x3."),
+    mk("vs-carnaval", CARNAVAL, ["#16a34a", "#db2777", "#08120a"], ["#fef08a", "#16a34a", "#9d174d"], "#fde047", "DESFILE MULTIPLICADOR", "Nos giros grátis o desfile esquenta: o multiplicador começa em x1 e sobe +1 a cada giro com vitória."),
+  ];
+  return Object.fromEntries(list.map((t) => [t.id, t]));
+}

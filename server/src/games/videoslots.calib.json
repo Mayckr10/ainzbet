@@ -38,5 +38,117 @@
   "vs-artico": {
     "scale": 3.7516,
     "buyPrice": 35
+  },
+  "vs-nilo": {
+    "scale": 1.4014,
+    "buyPrice": 106
+  },
+  "vs-tigre": {
+    "scale": 3.6441,
+    "buyPrice": 40
+  },
+  "vs-vikings": {
+    "scale": 3.7086,
+    "buyPrice": 37
+  },
+  "vs-vampiro": {
+    "scale": 2.0483,
+    "buyPrice": 98
+  },
+  "vs-samurai": {
+    "scale": 4.1471,
+    "buyPrice": 20
+  },
+  "vs-oeste": {
+    "scale": 1.96,
+    "buyPrice": 20
+  },
+  "vs-coruja": {
+    "scale": 3.8004,
+    "buyPrice": 32
+  },
+  "vs-recife": {
+    "scale": 2.2595,
+    "buyPrice": 22
+  },
+  "vs-lua": {
+    "scale": 1.5003,
+    "buyPrice": 20
+  },
+  "vs-celta": {
+    "scale": 1.7961,
+    "buyPrice": 49
+  },
+  "vs-gelo:fogo": {
+    "scale": 3.662,
+    "buyPrice": 33
+  },
+  "vs-gelo:gelo": {
+    "scale": 2.9028,
+    "buyPrice": 64
+  },
+  "vs-inca:2": {
+    "scale": 1.8801,
+    "buyPrice": 78
+  },
+  "vs-inca:3": {
+    "scale": 1.6978,
+    "buyPrice": 96
+  },
+  "vs-inca:4": {
+    "scale": 1.8044,
+    "buyPrice": 81
+  },
+  "vs-inca:5": {
+    "scale": 1.6437,
+    "buyPrice": 94
+  },
+  "vs-inca:6": {
+    "scale": 2.0466,
+    "buyPrice": 70
+  },
+  "vs-inca:7": {
+    "scale": 2.2709,
+    "buyPrice": 64
+  },
+  "vs-inca:8": {
+    "scale": 1.9107,
+    "buyPrice": 80
+  },
+  "vs-inca:9": {
+    "scale": 1.9871,
+    "buyPrice": 70
+  },
+  "vs-safari": {
+    "scale": 2.6295,
+    "buyPrice": 77
+  },
+  "vs-doces": {
+    "scale": 1.5233,
+    "buyPrice": 20
+  },
+  "vs-minotauro": {
+    "scale": 2.9399,
+    "buyPrice": 68
+  },
+  "vs-romano": {
+    "scale": 3.9583,
+    "buyPrice": 24
+  },
+  "vs-fazenda": {
+    "scale": 2.9752,
+    "buyPrice": 67
+  },
+  "vs-robos": {
+    "scale": 1.4211,
+    "buyPrice": 125
+  },
+  "vs-kraken": {
+    "scale": 1.7235,
+    "buyPrice": 48
+  },
+  "vs-carnaval": {
+    "scale": 3.7675,
+    "buyPrice": 31
   }
 }

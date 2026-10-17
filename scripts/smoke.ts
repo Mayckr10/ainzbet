@@ -54,6 +54,11 @@ for (const id of ["vs-savana", "vs-gemas", "vs-farao", "vs-piratas", "vs-dragao"
   instant.push([id, {}]);
 }
 instant.push(["vs-farao", { buy: true }]);
+for (const id of ["vs-nilo", "vs-tigre", "vs-vikings", "vs-vampiro", "vs-samurai", "vs-oeste", "vs-coruja", "vs-recife", "vs-lua", "vs-celta", "vs-safari", "vs-doces", "vs-minotauro", "vs-romano", "vs-fazenda", "vs-robos", "vs-kraken", "vs-carnaval"]) {
+  instant.push([id, {}]);
+}
+instant.push(["vs-gelo", { variant: "fogo" }], ["vs-gelo", { variant: "gelo", buy: true }], ["vs-inca", { variant: "7" }], ["vs-inca", { variant: "2", buy: true }]);
+instant.push(["vs-romano", { buy: true }], ["vs-minotauro", { buy: true }], ["vs-vikings", { buy: true }], ["vs-robos", { buy: true }]);
 for (const [g, params] of instant) {
   const r = await call("POST", `/play/${g}`, { bet: 10, params });
   const expected = balance - r.bet + r.payout;

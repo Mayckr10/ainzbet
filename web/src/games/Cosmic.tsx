@@ -5,7 +5,7 @@ import { SymbolArt } from "../art/Symbol";
 import { api } from "../lib/api";
 import { cls, fmt, fmtMult, sleep } from "../lib/format";
 import { sfx } from "../lib/sound";
-import { revealBalance, setBalance, showDebit, speedFactor, updateSettings, useApp } from "../lib/store";
+import { refreshUser, revealBalance, setBalance, showDebit, speedFactor, updateSettings, useApp } from "../lib/store";
 import { haptic, onBackButton } from "../lib/tg";
 import { nav } from "../nav";
 import { celebrate, coinBurst, confetti, showBigWin, bigWinTier } from "../ui/effects";
@@ -100,6 +100,9 @@ function Machine() {
   const [freeSummary, setFreeSummary] = useState<{ win: number; played: number; best: number; bet: number } | null>(null);
   const [lastRound, setLastRound] = useState<number | null>(null);
   const autoRef = useRef(0);
+  const busyRef = useRef(false);
+  const [cycle, setCycle] = useState<{ line: number; win: number; cells: [number, number][] }[] | null>(null);
+  const [focus, setFocus] = useState(0);
   const initial = useRef(randomGrid());
   autoRef.current = auto;
 
@@ -120,10 +123,54 @@ function Machine() {
     setGolden(new Set());
     setChips(new Map());
     setWinShow(null);
+    setCycle(null);
+    setFocus(0);
   };
 
+  async function resync() {
+    try {
+      await refreshUser();
+      const st = await api.get<{ machine: Machine }>("/cosmic/state");
+      setMachine(st.machine);
+    } catch {}
+  }
+
+  /** Giro com proteção total: qualquer erro ou travamento devolve a máquina a um estado jogável. */
   async function spin() {
-    if (busy || machine?.bonus) return;
+    if (busyRef.current) {
+      // tocar durante o giro = parada rápida
+      reels.current?.hurry();
+      return;
+    }
+    if (machine?.bonus) return;
+    busyRef.current = true;
+    const watchdog = setTimeout(() => {
+      reels.current?.reset(initial.current);
+      setBanner(null);
+      setGolden(new Set());
+      revealBalance();
+      busyRef.current = false;
+      setBusy(false);
+      resync();
+    }, 45_000);
+    try {
+      await runSpin();
+    } catch (e) {
+      toast(errorMessage(e), "error");
+      reels.current?.reset(initial.current);
+      setBanner(null);
+      setGolden(new Set());
+      setAuto(0);
+      revealBalance();
+      resync();
+    } finally {
+      clearTimeout(watchdog);
+      busyRef.current = false;
+      setBusy(false);
+    }
+  }
+
+  async function runSpin() {
     const free = inFree;
     const stake = free ? machine!.free!.bet : bet;
     if (!free && (user?.balance ?? 0) < stake) {
@@ -137,17 +184,7 @@ function Machine() {
     haptic.impact("medium");
     if (!free) showDebit(stake);
     reels.current?.start();
-    let r: any;
-    try {
-      r = await api.post("/cosmic/spin", { bet: stake });
-    } catch (e) {
-      toast(errorMessage(e), "error");
-      await reels.current?.stop(initial.current);
-      revealBalance();
-      setBusy(false);
-      setAuto(0);
-      return;
-    }
+    const r: any = await api.post("/cosmic/spin", { bet: stake });
     setBalance(r.balance, false);
     const res = r.result;
     const sf = speedFactor();
@@ -204,7 +241,8 @@ function Machine() {
       setBanner(null);
       const others = [0, 1, 2, 3, 4].filter((x) => !res.effects.respin.held.includes(x));
       if (others.length) {
-        reels.current?.start();
+        // gira e para EXATAMENTE os mesmos rolos (antes os rolos segurados ficavam girando)
+        reels.current?.start(others);
         await reels.current?.stop(res.effects.respin.grid, { only: others });
       }
     }
@@ -243,6 +281,7 @@ function Machine() {
         revealBalance();
         await sleep((res.wins.length > 3 ? 900 : 600) * sf);
       }
+      if (res.wins.length > 1) setCycle(res.wins.map((w: any) => ({ line: w.line, win: Math.floor(w.win * stake * res.multipliers.free * res.multipliers.chips * res.multipliers.queen), cells: w.cells })));
     } else {
       revealBalance();
       if (!free) setLastWin(0);
@@ -254,7 +293,6 @@ function Machine() {
       await sleep(400);
       setMachine(m);
       setFreeSummary({ win: res.free.win, played: res.free.played, best: res.free.best, bet: res.free.bet });
-      setBusy(false);
       return;
     }
     // ganhou giros grátis
@@ -263,7 +301,6 @@ function Machine() {
       sfx.freeSpins();
       confetti();
       setFreeIntro(res.freeSpinsWon);
-      setBusy(false);
       return;
     }
     if (res.freeSpinsWon && res.isFree) {
@@ -273,7 +310,6 @@ function Machine() {
       setBanner(null);
     }
     setMachine(m);
-    setBusy(false);
   }
 
   // giros automáticos e giros grátis em sequência
@@ -291,6 +327,14 @@ function Machine() {
       return () => clearTimeout(t);
     }
   }, [busy, auto, inFree, freeIntro, freeSummary, machine?.bonus]);
+
+  // depois de uma vitória com várias linhas, mostra uma linha de cada vez (como nas máquinas reais)
+  useEffect(() => {
+    if (busy || !cycle || cycle.length < 2) return;
+    const t = setInterval(() => setFocus((f) => (f + 1) % cycle.length), 1300);
+    return () => clearInterval(t);
+  }, [busy, cycle]);
+  const focused = !busy && cycle && cycle.length > 1 ? cycle[focus % cycle.length] : null;
 
   const changeBet = (dir: 1 | -1) => {
     const i = BETS.findIndex((b) => b >= bet);
@@ -381,7 +425,7 @@ function Machine() {
               gap={5}
               aspect={1.12}
               cellClass="rounded-xl bg-gradient-to-b from-white/[0.06] to-white/[0.015]"
-              highlight={highlight}
+              highlight={focused ? new Set(focused.cells.map(([a, b]) => `${a}-${b}`)) : highlight}
               renderSymbol={(s, r, w) => (
                 <SymbolArt art={COSMIC_ART[s]}>
                   {s === 3 && (
@@ -403,7 +447,7 @@ function Machine() {
                 ) : null
               }
             >
-              <Paylines lines={LINES} active={lines} reels={5} rows={3} />
+              <Paylines lines={LINES} active={lines} reels={5} rows={3} focus={focused ? focused.line : null} />
             </Reels>
             <AnimatePresence>
               {banner && (
@@ -433,7 +477,11 @@ function Machine() {
                   <CountUp value={winShow.amount} duration={0.9} onTick={sfx.count} className="font-display font-black text-[26px] gold-text" />
                   <span className="text-xs font-extrabold text-gold-300/80 ml-1">{fmtMult(winShow.mult)}</span>
                 </div>
-                {winShow.parts.length > 0 && <div className="text-[10px] font-bold text-white/60">{winShow.parts.join(" · ")}</div>}
+                {focused ? (
+                  <div className="text-[11px] font-extrabold text-gold-300/90">Linha {focused.line + 1} · +{fmt(focused.win)}</div>
+                ) : (
+                  winShow.parts.length > 0 && <div className="text-[10px] font-bold text-white/60">{winShow.parts.join(" · ")}</div>
+                )}
               </motion.div>
             )}
           </AnimatePresence>
@@ -457,7 +505,6 @@ function Machine() {
             <motion.button
               data-spin
               whileTap={{ scale: 0.92 }}
-              disabled={busy && !auto}
               onClick={() => {
                 if (auto) return setAuto(0);
                 sfx.click();
@@ -514,8 +561,8 @@ function Machine() {
         <Paytable bet={bet} pays={cfg?.cosmic?.pays} />
       </Sheet>
 
-      <FreeIntro n={freeIntro} onStart={() => { setFreeIntro(null); setAuto(0); }} />
-      <FreeSummary data={freeSummary} onClose={() => setFreeSummary(null)} />
+      <FreeIntro n={freeIntro} autoStart={auto > 0} onStart={() => setFreeIntro(null)} />
+      <FreeSummary data={freeSummary} autoClose={auto > 0} onClose={() => setFreeSummary(null)} />
       {machine?.bonus && <PickBonus machine={machine} onDone={(m) => setMachine(m)} />}
     </div>
   );
@@ -548,7 +595,12 @@ function RoundBtn({ label, onClick, big, small, disabled, title }: { label: stri
 }
 
 /* ===================================================================== giros grátis */
-function FreeIntro({ n, onStart }: { n: number | null; onStart: () => void }) {
+function FreeIntro({ n, onStart, autoStart }: { n: number | null; onStart: () => void; autoStart?: boolean }) {
+  useEffect(() => {
+    if (!n || !autoStart) return;
+    const t = setTimeout(onStart, 2600);
+    return () => clearTimeout(t);
+  }, [n, autoStart]);
   return (
     <AnimatePresence>
       {n && (
@@ -562,7 +614,7 @@ function FreeIntro({ n, onStart }: { n: number | null; onStart: () => void }) {
               <li>✦ Arcanos dourados com mais frequência</li>
               <li>✦ 3 Nebulosas = +5 giros</li>
             </ul>
-            <Btn variant="gold" size="xl" pulse className="mt-8 w-64 shine" onClick={onStart}>COMEÇAR</Btn>
+            <Btn variant="gold" size="xl" pulse className="mt-8 w-64 shine" onClick={onStart}>{autoStart ? "COMEÇANDO…" : "COMEÇAR"}</Btn>
           </motion.div>
         </motion.div>
       )}
@@ -570,7 +622,12 @@ function FreeIntro({ n, onStart }: { n: number | null; onStart: () => void }) {
   );
 }
 
-function FreeSummary({ data, onClose }: { data: { win: number; played: number; best: number; bet: number } | null; onClose: () => void }) {
+function FreeSummary({ data, onClose, autoClose }: { data: { win: number; played: number; best: number; bet: number } | null; onClose: () => void; autoClose?: boolean }) {
+  useEffect(() => {
+    if (!data || !autoClose) return;
+    const t = setTimeout(onClose, bigWinTier(data.win) ? 9000 : 4000);
+    return () => clearTimeout(t);
+  }, [data, autoClose]);
   useEffect(() => {
     if (data) {
       const amount = Math.floor(data.win * data.bet);

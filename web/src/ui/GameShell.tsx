@@ -28,6 +28,7 @@ export function GameShell({
   useEffect(() => onBackButton(() => nav.back()), []);
   return (
     <div className={cls("fixed inset-0 flex flex-col overflow-hidden", className ?? "nebula-bg")}>
+      <div className="absolute inset-0 overflow-hidden pointer-events-none"><div className="aurora" /></div>
       <div className="stars-layer" />
       <header className="relative z-10 flex items-center gap-2 px-3 pb-2" style={{ paddingTop: "calc(var(--safe-top) + 10px)" }}>
         {!inTelegram && (

@@ -9,6 +9,7 @@ import { PlayingCard, Shoe } from "../ui/cards";
 import { celebrate } from "../ui/effects";
 import { GameShell, sessionAction, shareRound, startSession } from "../ui/GameShell";
 import { BetInput, Btn, toast, useBet } from "../ui/kit";
+import { BetSpot, TablePrint } from "../ui/chips";
 
 type Hand = { cards: number[]; bet: number; done: boolean; doubled?: boolean; result?: string; payout?: number; total: number; soft: boolean };
 type View = { dealer: number[]; dealerTotal: number; hands: Hand[]; active: number; actions: string[] };
@@ -81,7 +82,10 @@ export default function Blackjack() {
     <GameShell title="Blackjack" game="blackjack" info={<><p>Chegue mais perto de 21 que o dealer sem estourar. Blackjack paga 3:2. O dealer para em 17 (inclusive soft 17).</p><p>Dobrar: dobra a aposta e recebe só mais uma carta. Dividir: pares viram duas mãos (uma divisão por rodada; ases recebem uma carta cada). 6 baralhos embaralhados a cada mão.</p></>}>
       <Felt>
         <Shoe />
-        <div className="absolute top-3 left-0 right-0 text-center text-[10px] font-black tracking-[0.25em] text-gold-300/50">BLACKJACK PAGA 3:2 · DEALER PARA EM 17</div>
+        <TablePrint top="BLACKJACK PAGA 3 PARA 2" bottom="DEALER PARA EM 17 · 6 BARALHOS" />
+        <div className="absolute left-4 bottom-5">
+          <BetSpot label="APOSTA" amount={v ? v.hands.reduce((a, h) => a + h.bet, 0) : bet} active={!!v && !done} win={!!done && round!.payout > 0} size={58} />
+        </div>
         {/* dealer */}
         <div className="absolute top-12 left-0 right-0 flex flex-col items-center">
           <div className="flex -space-x-7 min-h-[92px]">

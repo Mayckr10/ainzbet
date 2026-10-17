@@ -28,8 +28,27 @@ export default function Forge() {
   const wheelDone = useRef<() => void>(() => {});
   const initial = useRef([[1, 4, 6], [5, 2, 6], [4, 3, 1]]);
 
+  const busyRef = useRef(false);
   async function play() {
-    if (busy) return;
+    if (busyRef.current) {
+      reels.current?.hurry();
+      return;
+    }
+    busyRef.current = true;
+    try {
+      await runPlay();
+    } catch {
+      reels.current?.reset(initial.current);
+      setWheel(null);
+      revealBalance();
+      setAuto(false);
+    } finally {
+      busyRef.current = false;
+      setBusy(false);
+    }
+  }
+
+  async function runPlay() {
     setBusy(true);
     setHl(null);
     setLines([]);
@@ -38,8 +57,7 @@ export default function Forge() {
     reels.current?.start();
     const r = await playInstant<{ grid: number[][]; wins: { line: number; mult: number }[]; wheel: any; multiplier: number }>("slots-classic", bet, {});
     if (!r) {
-      await reels.current?.stop(initial.current);
-      setBusy(false);
+      reels.current?.reset(initial.current);
       setAuto(false);
       return;
     }
@@ -77,7 +95,6 @@ export default function Forge() {
       await sleep(600);
       revealBalance();
     } else revealBalance();
-    setBusy(false);
   }
 
   useEffect(() => {
@@ -117,7 +134,7 @@ export default function Forge() {
         <BetInput value={bet} onChange={setBet} disabled={busy} />
         <div className="flex gap-2">
           <Btn variant="glass" size="lg" className="w-[90px]" onClick={() => setAuto((a) => !a)}>{auto ? "PARAR" : "AUTO"}</Btn>
-          <Btn variant="gold" size="lg" className="flex-1" pulse={!busy} disabled={busy} onClick={play}>{busy ? "…" : "GIRAR"}</Btn>
+          <Btn variant="gold" size="lg" className="flex-1" pulse={!busy} onClick={play}>{busy ? "PARAR" : "GIRAR"}</Btn>
         </div>
         {lastRound && !busy && win > 0 && <button onClick={() => shareRound(lastRound)} className="text-[11px] font-black text-orange-300 press">COMPARTILHAR NO GRUPO ↗</button>}
       </div>

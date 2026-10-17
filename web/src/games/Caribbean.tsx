@@ -9,6 +9,7 @@ import { PlayingCard, Shoe } from "../ui/cards";
 import { celebrate } from "../ui/effects";
 import { GameShell, sessionAction, shareRound, startSession } from "../ui/GameShell";
 import { BetInput, Btn, toast, useBet } from "../ui/kit";
+import { BetSpot, TablePrint } from "../ui/chips";
 import { Felt } from "./Blackjack";
 
 const H5 = ["Carta alta", "Par", "Dois pares", "Trinca", "Sequência", "Flush", "Full house", "Quadra", "Straight flush", "Royal flush"];
@@ -54,12 +55,17 @@ export default function Caribbean() {
     <GameShell title="Caribbean Stud" game="caribbean" info={<><p>Aposte o Ante e receba 5 cartas; o dealer mostra uma. Pague o Call (2x o Ante) para continuar ou desista.</p><p>O dealer qualifica com Ás e Rei ou melhor. Sem qualificação: Ante paga 1:1 e o Call volta. Se você vencer, o Call paga pela mão: par 1:1, dois pares 2:1, trinca 3:1, sequência 4:1, flush 5:1, full house 7:1, quadra 20:1, straight flush 50:1, royal flush 100:1.</p></>}>
       <Felt color="teal">
         <Shoe />
+        <TablePrint top="DEALER QUALIFICA COM ÁS E REI" bottom="ROYAL FLUSH PAGA 100 PARA 1" />
+        <div className="absolute left-0 right-0 top-[54%] flex justify-center gap-6">
+          <BetSpot label="ANTE" amount={v ? v.ante : bet} active={!!v && !round?.done} win={!!round?.done && ["win", "noqualify"].includes(v?.outcome)} size={54} />
+          <BetSpot label="CALL" amount={round?.done && v?.outcome !== "fold" ? v.ante * 2 : undefined} win={!!round?.done && v?.outcome === "win"} size={54} />
+        </div>
         <div className="absolute top-12 left-0 right-0 flex flex-col items-center">
           <div className="text-[10px] font-black tracking-widest text-white/50 mb-1">DEALER {round?.done && v?.dealerHand != null && `· ${H5[v.dealerHand]}`}</div>
           <div className="flex -space-x-5 min-h-[84px]">{(v?.dealer ?? []).map((c: number, i: number) => <PlayingCard key={`d${i}-${round?.id}`} card={c} index={i * 2 + 1} size="sm" />)}</div>
         </div>
         {round?.done && (
-          <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 1 }} className="absolute left-0 right-0 top-[46%] text-center">
+          <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 1 }} className="absolute left-0 right-0 top-[40%] text-center z-10">
             <div className="inline-block rounded-full bg-black/60 px-4 py-1.5 font-black text-sm">{OUT[v.outcome]}{round.payout ? ` · +${fmt(round.payout)}` : ""}</div>
           </motion.div>
         )}

@@ -28,6 +28,7 @@ export default function Abyss() {
   const [auto, setAuto] = useState(false);
   const [lastRound, setLastRound] = useState<number | null>(null);
   const autoRef = useRef(false);
+  const busyRef = useRef(false);
   autoRef.current = auto;
   const introResolve = useRef<() => void>(() => {});
   const initial = useRef(Array.from({ length: 5 }, () => Array.from({ length: 3 }, () => POOL[(Math.random() * 11) | 0])));
@@ -75,15 +76,31 @@ export default function Abyss() {
   }
 
   async function play(buy = false) {
-    if (busy) return;
+    if (busyRef.current) return;
+    busyRef.current = true;
+    try {
+      await runPlay(buy);
+    } catch {
+      reels.current?.reset(initial.current);
+      setFree(null);
+      setIntro(null);
+      revealBalance();
+      setAuto(false);
+    } finally {
+      busyRef.current = false;
+      setBusy(false);
+    }
+  }
+
+  async function runPlay(buy: boolean) {
     const cost = buy ? bet * (cfg?.buyPrice ?? 52) : bet;
     if (buy && !(await confirm(`Comprar o bônus de giros grátis por ${fmt(cost)} fichas?`))) return;
+    if (buy) setAuto(false);
     setBusy(true);
     setWin(0);
     haptic.impact("medium");
     const r = await playInstant<{ base: Spin | null; free: Spin[]; multiplier: number; maxWin: boolean }>("slots-fruit", bet, buy ? { buy: true } : {}, cost);
     if (!r) {
-      setBusy(false);
       setAuto(false);
       return;
     }
@@ -123,7 +140,7 @@ export default function Abyss() {
       await sleep(600);
       revealBalance();
     } else revealBalance();
-    setBusy(false);
+    initial.current = (res.free.length ? res.free[res.free.length - 1].grid : res.base?.grid) ?? initial.current;
   }
 
   useEffect(() => {
@@ -195,7 +212,7 @@ export default function Abyss() {
         <BetInput value={bet} onChange={setBet} disabled={busy} />
         <div className="flex gap-2">
           <Btn variant="glass" size="lg" className="w-[84px]" onClick={() => setAuto((a) => !a)}>{auto ? "PARAR" : "AUTO"}</Btn>
-          <Btn variant="gold" size="lg" className="flex-1" pulse={!busy} disabled={busy} onClick={() => play(false)}>{busy ? "GIRANDO…" : "GIRAR"}</Btn>
+          <Btn variant="gold" size="lg" className="flex-1" pulse={!busy} onClick={() => (busy ? reels.current?.hurry() : play(false))}>{busy ? "PARAR" : "GIRAR"}</Btn>
           <Btn variant="violet" size="lg" className="w-[110px] text-[11px] leading-tight" disabled={busy} onClick={() => play(true)}>
             <span>COMPRAR<br />BÔNUS {cfg?.buyPrice ?? 52}x</span>
           </Btn>

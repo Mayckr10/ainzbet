@@ -62,10 +62,44 @@ body {
 /* Fundo de nebulosa animado (barato: só gradientes) */
 .nebula-bg {
   background:
-    radial-gradient(60% 40% at 15% 0%, rgba(124, 58, 237, 0.28), transparent 70%),
-    radial-gradient(50% 35% at 100% 15%, rgba(236, 72, 153, 0.16), transparent 70%),
-    radial-gradient(70% 45% at 50% 110%, rgba(34, 211, 238, 0.12), transparent 70%),
-    var(--color-space-950);
+    radial-gradient(60% 40% at 12% -4%, rgba(124, 58, 237, 0.30), transparent 70%),
+    radial-gradient(45% 30% at 100% 10%, rgba(217, 168, 69, 0.16), transparent 70%),
+    radial-gradient(70% 45% at 50% 112%, rgba(34, 211, 238, 0.10), transparent 70%),
+    linear-gradient(180deg, #0a0812 0%, #06050b 100%);
+}
+
+/* auroras lentas por trás do conteúdo */
+.aurora {
+  position: absolute;
+  inset: -20%;
+  pointer-events: none;
+  background:
+    radial-gradient(28% 22% at 20% 30%, rgba(124, 58, 237, 0.22), transparent 70%),
+    radial-gradient(24% 20% at 80% 20%, rgba(217, 168, 69, 0.14), transparent 70%),
+    radial-gradient(30% 22% at 60% 80%, rgba(34, 211, 238, 0.10), transparent 70%);
+  filter: blur(20px);
+  animation: aurora 22s ease-in-out infinite alternate;
+}
+@keyframes aurora {
+  0% { transform: translate3d(0, 0, 0) rotate(0deg) scale(1); }
+  50% { transform: translate3d(4%, -3%, 0) rotate(8deg) scale(1.08); }
+  100% { transform: translate3d(-4%, 3%, 0) rotate(-6deg) scale(1.02); }
+}
+.lowfx .aurora { animation: none; filter: none; }
+
+/* moldura dourada fina dos cartões */
+.tile-frame {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(var(--tile-bg, #120f22), var(--tile-bg, #120f22)) padding-box,
+    linear-gradient(160deg, rgba(255, 231, 163, 0.55), rgba(255, 255, 255, 0.06) 35%, rgba(255, 255, 255, 0.04) 65%, rgba(217, 168, 69, 0.45)) border-box;
+}
+
+.section-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: 0.01em;
 }
 
 .stars-layer {

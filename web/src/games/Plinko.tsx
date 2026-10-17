@@ -7,7 +7,7 @@ import { coinBurst, showBigWin, bigWinTier } from "../ui/effects";
 import { GameShell, playInstant } from "../ui/GameShell";
 import { BetInput, Btn, Segmented, useBet } from "../ui/kit";
 
-type Ball = { path: number[]; start: number; bucket: number; payout: number; bet: number; mult: number; done?: boolean };
+type Ball = { path: number[]; start: number; bucket: number; payout: number; bet: number; mult: number; done?: boolean; color?: string; split?: number };
 
 function bucketColor(m: number) {
   if (m >= 100) return ["#ef4444", "#7f1d1d"];
@@ -18,8 +18,14 @@ function bucketColor(m: number) {
 }
 
 export default function Plinko() {
+  return <PlinkoGame />;
+}
+
+/** duo: a bola se divide em duas depois das 2 primeiras linhas (Plinko Pirâmide). */
+export function PlinkoGame({ duo = false }: { duo?: boolean }) {
+  const game = duo ? "plinko-duo" : "plinko";
   const tables = useApp((s) => s.config?.plinko ?? {});
-  const [bet, setBet] = useBet("plinko", 10);
+  const [bet, setBet] = useBet(game, 10);
   const [rows, setRows] = useState(() => Number(localStorage.getItem("cc_plinko_rows")) || 12);
   const [risk, setRisk] = useState<"low" | "medium" | "high">(() => (localStorage.getItem("cc_plinko_risk") as any) || "medium");
   const [inFlight, setInFlight] = useState(0);
@@ -124,9 +130,9 @@ export default function Plinko() {
           g.arc(x, y, ballR, 0, Math.PI * 2);
           const bg = g.createRadialGradient(x - 2, y - 2, 1, x, y, ballR);
           bg.addColorStop(0, "#fff");
-          bg.addColorStop(1, "#f472b6");
+          bg.addColorStop(1, b.color ?? "#f472b6");
           g.fillStyle = bg;
-          g.shadowColor = "#f472b6";
+          g.shadowColor = b.color ?? "#f472b6";
           g.shadowBlur = 10;
           g.fill();
           g.shadowBlur = 0;
@@ -159,6 +165,17 @@ export default function Plinko() {
 
   async function drop() {
     haptic.impact("light");
+    if (duo) {
+      const r = await playInstant<{ balls: { path: number[]; bucket: number; multiplier: number }[] }>("plinko-duo", bet, { rows, risk });
+      if (!r) return setAuto(false);
+      setInFlight((x) => x + 2);
+      const half = [Math.floor(bet / 2), bet - Math.floor(bet / 2)];
+      const now = performance.now();
+      r.result.balls.forEach((b, i) =>
+        balls.current.push({ path: b.path, bucket: b.bucket, start: now, payout: Math.floor(half[i] * b.multiplier), bet: half[i], mult: b.multiplier, color: i ? "#38bdf8" : "#f472b6", split: 2 }),
+      );
+      return;
+    }
     const r = await playInstant<{ path: number[]; bucket: number; multiplier: number }>("plinko", bet, { rows, risk });
     if (!r) return setAuto(false);
     setInFlight((x) => x + 1);
@@ -172,7 +189,18 @@ export default function Plinko() {
   }, [auto, bet, rows, risk]);
 
   return (
-    <GameShell title="Plinko" game="plinko" info={<><p>Solte a bola: em cada pino ela vai para a esquerda ou direita (50%). A caçapa final define o multiplicador.</p><p>Escolha de 8 a 16 linhas e o risco. RTP ≈ 99%, até 1.000x.</p></>}>
+    <GameShell
+      title={duo ? "Plinko Pirâmide" : "Plinko"}
+      game={game}
+      bg={duo ? "radial-gradient(70% 45% at 50% 0%, rgba(56,189,248,0.3), transparent 70%), radial-gradient(60% 40% at 50% 100%, rgba(244,114,182,0.3), transparent 70%), linear-gradient(180deg,#0b0820,#04030c)" : undefined}
+      info={
+        duo ? (
+          <><p>A bola desce as duas primeiras linhas e se divide em duas (rosa e azul). Cada metade vale metade da aposta e segue o próprio caminho até uma caçapa.</p><p>Prêmio = média dos dois multiplicadores. Mesmas tabelas do Plinko (8 a 16 linhas, 3 riscos). RTP ≈ 99%.</p></>
+        ) : (
+          <><p>Solte a bola: em cada pino ela vai para a esquerda ou direita (50%). A caçapa final define o multiplicador.</p><p>Escolha de 8 a 16 linhas e o risco. RTP ≈ 99%, até 1.000x.</p></>
+        )
+      }
+    >
       <div className="px-3 flex gap-1.5 h-7">
         {last.map((l, i) => <span key={i} className={cls("rounded-lg px-2 py-1 text-[11px] font-black", l.win ? "bg-win-500/20 text-win-400" : "bg-white/5 text-white/50")}>{l.m}x</span>)}
       </div>
@@ -188,7 +216,7 @@ export default function Plinko() {
         <BetInput value={bet} onChange={setBet} />
         <div className="flex gap-2">
           <Btn variant="glass" size="lg" className="w-24" onClick={() => setAuto((a) => !a)}>{auto ? "PARAR" : "AUTO"}</Btn>
-          <Btn variant="gold" size="lg" className="flex-1" pulse onClick={drop}>SOLTAR BOLA · {fmt(bet)}</Btn>
+          <Btn variant="gold" size="lg" className="flex-1" pulse onClick={drop}>{duo ? "SOLTAR E DIVIDIR" : "SOLTAR BOLA"} · {fmt(bet)}</Btn>
         </div>
       </div>
     </GameShell>

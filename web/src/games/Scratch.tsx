@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { cls, fmt, fmtCompact } from "../lib/format";
 import { sfx } from "../lib/sound";
 import { revealBalance } from "../lib/store";
@@ -19,7 +19,7 @@ const PRIZE_STYLE: Record<number, { bg: string; icon: string }> = {
 };
 
 /** Célula com camada raspável (canvas). */
-function ScratchCell({ value, bet, onRevealed, reset, revealAll, win }: { value: number; bet: number; onRevealed: () => void; reset: number; revealAll: boolean; win: boolean }) {
+export function ScratchCell({ value, bet, onRevealed, reset, revealAll, win, face, cover = ["#cbd5e1", "#f1f5f9", "#94a3b8"], mark = "?", className }: { value: number; bet: number; onRevealed: () => void; reset: number; revealAll: boolean; win: boolean; face?: ReactNode; cover?: string[]; mark?: string; className?: string }) {
   const ref = useRef<HTMLCanvasElement>(null);
   const [done, setDone] = useState(false);
   const scratched = useRef(0);
@@ -35,9 +35,9 @@ function ScratchCell({ value, bet, onRevealed, reset, revealAll, win }: { value:
     const g = c.getContext("2d")!;
     g.scale(dpr, dpr);
     const grad = g.createLinearGradient(0, 0, W, H);
-    grad.addColorStop(0, "#cbd5e1");
-    grad.addColorStop(0.5, "#f1f5f9");
-    grad.addColorStop(1, "#94a3b8");
+    grad.addColorStop(0, cover[0]);
+    grad.addColorStop(0.5, cover[1]);
+    grad.addColorStop(1, cover[2]);
     g.fillStyle = grad;
     g.fillRect(0, 0, W, H);
     g.fillStyle = "rgba(100,116,139,0.5)";
@@ -45,7 +45,7 @@ function ScratchCell({ value, bet, onRevealed, reset, revealAll, win }: { value:
     g.fillStyle = "#64748b";
     g.font = "900 18px Unbounded";
     g.textAlign = "center";
-    g.fillText("?", W / 2, H / 2 + 7);
+    g.fillText(mark, W / 2, H / 2 + 7);
   }, [reset]);
   useEffect(() => {
     if (revealAll && !done) {
@@ -74,13 +74,15 @@ function ScratchCell({ value, bet, onRevealed, reset, revealAll, win }: { value:
 
   const st = PRIZE_STYLE[value];
   return (
-    <div className={cls("relative aspect-square rounded-2xl overflow-hidden", win && done && "ring-4 ring-gold-300 shadow-[0_0_24px_rgba(253,224,71,0.7)]")}>
-      <div className="absolute inset-0 grid place-items-center text-center" style={{ background: st.bg }}>
-        <div>
-          <div className="text-3xl">{st.icon}</div>
-          <div className="font-display font-black text-sm text-white drop-shadow">{fmtCompact(value * bet)}</div>
+    <div className={cls("relative aspect-square rounded-2xl overflow-hidden", win && done && "ring-4 ring-gold-300 shadow-[0_0_24px_rgba(253,224,71,0.7)]", className)}>
+      {face ?? (
+        <div className="absolute inset-0 grid place-items-center text-center" style={{ background: st.bg }}>
+          <div>
+            <div className="text-3xl">{st.icon}</div>
+            <div className="font-display font-black text-sm text-white drop-shadow">{fmtCompact(value * bet)}</div>
+          </div>
         </div>
-      </div>
+      )}
       <motion.canvas
         ref={ref}
         animate={{ opacity: done ? 0 : 1 }}

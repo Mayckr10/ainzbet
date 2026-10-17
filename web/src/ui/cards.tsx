@@ -62,6 +62,22 @@ export function PlayingCard({ card, index = 0, size = "md", highlight, dim, held
 
 function CardFace({ card, className, size }: { card: number; className: string; size: "sm" | "md" | "lg" }) {
   if (card < 0) return <div className={cls("absolute inset-0 [backface-visibility:hidden] bg-white", className)} />;
+  if (card >= 52)
+    return (
+      <div className={cls("absolute inset-0 [backface-visibility:hidden] bg-gradient-to-br from-white to-[#fdf2f8] shadow-[0_6px_14px_rgba(0,0,0,0.45)] overflow-hidden", className)}>
+        <div className="absolute top-1 left-1.5 text-[10px] font-black text-[#7c3aed] [writing-mode:vertical-rl] tracking-tighter">CORINGA</div>
+        <svg viewBox="0 0 100 100" className="absolute inset-[16%]">
+          <path d="M20 46 L28 16 L42 38 L50 10 L58 38 L72 16 L80 46 Z" fill="#7c3aed" stroke="#3b0764" strokeWidth="3" strokeLinejoin="round" />
+          <circle cx="28" cy="14" r="5" fill="#f43f5e" />
+          <circle cx="50" cy="8" r="5" fill="#facc15" />
+          <circle cx="72" cy="14" r="5" fill="#22c55e" />
+          <circle cx="50" cy="66" r="20" fill="#fde68a" stroke="#3b0764" strokeWidth="3" />
+          <circle cx="43" cy="62" r="3" fill="#111" />
+          <circle cx="57" cy="62" r="3" fill="#111" />
+          <path d="M40 72 Q50 82 60 72" stroke="#be123c" strokeWidth="3.5" fill="none" strokeLinecap="round" />
+        </svg>
+      </div>
+    );
   const r = RANKS[card % 13];
   const s = Math.floor(card / 13);
   const color = RED(s) ? "text-[#d61f45]" : "text-[#16132b]";

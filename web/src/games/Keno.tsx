@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { cls, fmt, sleep } from "../lib/format";
 import { sfx } from "../lib/sound";
 import { speedFactor, useApp } from "../lib/store";
@@ -9,13 +9,27 @@ import { GameShell, playInstant, shareRound } from "../ui/GameShell";
 import { BetInput, Btn, useBet } from "../ui/kit";
 
 export default function Keno() {
+  return <KenoGame />;
+}
+
+/** turbo: Keno Turbo (sorteio das 10 bolas em ~2 segundos, mesma tabela). */
+export function KenoGame({ turbo = false }: { turbo?: boolean }) {
+  const game = turbo ? "keno-turbo" : "keno";
   const table: number[][] = useApp((s) => s.config?.keno ?? []);
-  const [bet, setBet] = useBet("keno");
+  const [bet, setBet] = useBet(game);
   const [picks, setPicks] = useState<number[]>(() => JSON.parse(localStorage.getItem("cc_keno_picks") ?? "[]"));
   const [drawn, setDrawn] = useState<number[]>([]);
   const [busy, setBusy] = useState(false);
   const [res, setRes] = useState<{ hits: number; payout: number; id: number } | null>(null);
   const row = table[picks.length] ?? [];
+  const [auto, setAuto] = useState(false);
+  const autoRef = useRef(false);
+  autoRef.current = auto;
+  useEffect(() => {
+    if (!auto || busy) return;
+    const t = setTimeout(() => autoRef.current && play(), 450);
+    return () => clearTimeout(t);
+  }, [auto, busy]);
 
   function toggle(n: number) {
     if (busy) return;
@@ -45,15 +59,18 @@ export default function Keno() {
     setDrawn([]);
     setRes(null);
     haptic.impact("medium");
-    const r = await playInstant<{ drawn: number[]; hits: number; multiplier: number }>("keno", bet, { picks });
-    if (!r) return setBusy(false);
+    const r = await playInstant<{ drawn: number[]; hits: number; multiplier: number }>(game, bet, { picks });
+    if (!r) {
+      setAuto(false);
+      return setBusy(false);
+    }
     for (const n of r.result.drawn) {
       setDrawn((d) => [...d, n]);
       if (picks.includes(n)) {
         sfx.gem();
         haptic.impact("light");
       } else sfx.ball();
-      await sleep(170 * speedFactor());
+      await sleep((turbo ? 55 : 170) * speedFactor());
     }
     setRes({ hits: r.result.hits, payout: r.payout, id: r.roundId });
     if (!r.payout) sfx.lose();
@@ -62,7 +79,12 @@ export default function Keno() {
   }
 
   return (
-    <GameShell title="Keno" game="keno" info={<><p>Escolha de 1 a 10 números entre 40. São sorteados 10. O prêmio depende de quantos você acertar (tabela abaixo da grade). RTP ≈ 97%.</p></>}>
+    <GameShell
+      title={turbo ? "Keno Turbo" : "Keno"}
+      game={game}
+      bg={turbo ? "radial-gradient(80% 50% at 50% 0%, rgba(250,204,21,0.25), transparent 70%), radial-gradient(60% 40% at 50% 100%, rgba(239,68,68,0.25), transparent 70%), linear-gradient(180deg,#140b05,#070402)" : undefined}
+      info={<><p>Escolha de 1 a 10 números entre 40. São sorteados 10. O prêmio depende de quantos você acertar (tabela abaixo da grade). RTP ≈ 97%.</p>{turbo && <p>No Keno Turbo o sorteio inteiro acontece em cerca de 2 segundos, e o AUTO repete a jogada sem parar.</p>}</>}
+    >
       <div className="flex-1 flex flex-col justify-center px-3 gap-3">
         <div className="grid grid-cols-8 gap-1.5">
           {Array.from({ length: 40 }, (_, i) => i + 1).map((n) => {
@@ -109,8 +131,11 @@ export default function Keno() {
       <div className="px-3 flex flex-col gap-2" style={{ paddingBottom: "calc(var(--safe-bottom) + 10px)" }}>
         <BetInput value={bet} onChange={setBet} disabled={busy} />
         <div className="flex gap-2">
-          <Btn variant="glass" size="lg" className="w-24 text-xs" disabled={busy} onClick={random}>SURPRESA</Btn>
-          <Btn variant="glass" size="lg" className="w-20 text-xs" disabled={busy || !picks.length} onClick={() => { setPicks([]); setDrawn([]); setRes(null); }}>LIMPAR</Btn>
+          {turbo ? (
+            <Btn variant={auto ? "red" : "glass"} size="lg" className="w-20 text-xs" disabled={!picks.length} onClick={() => setAuto(!auto)}>{auto ? "PARAR" : "AUTO"}</Btn>
+          ) : null}
+          <Btn variant="glass" size="lg" className={turbo ? "w-14 text-base" : "w-24 text-xs"} disabled={busy} onClick={random}>{turbo ? "🎲" : "SURPRESA"}</Btn>
+          <Btn variant="glass" size="lg" className={turbo ? "w-14 text-base" : "w-20 text-xs"} disabled={busy || !picks.length} onClick={() => { setPicks([]); setDrawn([]); setRes(null); }}>{turbo ? "✕" : "LIMPAR"}</Btn>
           <Btn variant="gold" size="lg" className="flex-1" disabled={busy || !picks.length} pulse={!busy && picks.length > 0} onClick={play}>SORTEAR</Btn>
         </div>
       </div>

@@ -107,6 +107,84 @@ const me3 = await call("GET", "/me");
 ok("crash", cr.done && me3.user.balance === balance - 20 + cr.payout, `${cr.view.outcome} @ ${cr.view.point} prêmio ${cr.payout}`);
 balance = me3.user.balance;
 
+// ---- Onda 1: instantâneos
+const w1: [string, any][] = [
+  ["overunder", { target: 50, dir: "over" }],
+  ["wheel", { segments: 30, risk: "medium" }],
+  ["limbo-turbo", { target: 2, count: 5 }],
+  ["cofre-secreto", { digits: 2, code: "07" }],
+  ["diamantes", {}],
+  ["loto-dados", { type: "over", value: 18 }],
+  ["foguetes", { rocket: 1 }],
+  ["tiro-alvo", { risk: "high" }],
+  ["dardos", {}],
+  ["garra", { lane: 2 }],
+  ["fruta-neon", {}],
+  ["plinko-duo", { rows: 12, risk: "medium" }],
+  ["dragon-tiger", { bets: { dragon: 10, tie: 5 } }],
+  ["andar-bahar", { bets: { andar: 10, bahar: 5 } }],
+  ["baccarat-lightning", { bets: { player: 10, tie: 5 } }],
+  ["scratch-farao", {}],
+  ["scratch-mult", {}],
+  ["megasena", { picks: [3, 14, 25, 36, 47, 58] }],
+  ["bingo90", {}],
+  ["bingo-flash", {}],
+  ["keno-turbo", { picks: [2, 4, 6] }],
+  ["bicho", { mode: "grupo", value: 16 }],
+  ["bicho", { mode: "milhar", value: 1234 }],
+];
+for (const [g, params] of w1) {
+  const r = await call("POST", `/play/${g}`, { bet: 10, params });
+  const expected = balance - r.bet + r.payout;
+  ok(`${g}`, r.balance === expected, `aposta ${r.bet} prêmio ${r.payout}`);
+  balance = r.balance;
+}
+// ---- Onda 1: sessões
+for (const [g, params] of [["bolhas", { bombs: 3 }], ["mines7", { bombs: 10 }], ["tesouro", { bombs: 5 }]] as const) {
+  let k = 0;
+  await session(g, params, (v) => (v.revealed.length >= 2 ? ["cashout", {}] : ["reveal", { cell: k++ }]));
+}
+for (const [g, mode] of [["escada", "easy"], ["galinha", "medium"], ["blocos", "easy"], ["maca", "easy"], ["penalti", "easy"], ["moedas", "normal"]]) {
+  await session(g, { mode }, (v) => (v.level >= 2 ? ["cashout", {}] : ["pick", { col: 0 }]));
+}
+await session("hilo", {}, (v) => (v.steps.filter((s: any) => s.ok && s.dir !== "skip").length >= 1 ? ["cashout", {}] : [v.hi.p >= v.lo.p ? "hi" : "lo", {}]));
+{
+  let i = 0;
+  await session("cofre-banco", {}, () => ["pick", { index: i++ }]);
+}
+{
+  let i = 0;
+  await session("pescaria", {}, () => ["pick", { index: i++ }]);
+}
+{
+  let i = 0;
+  await session("bau-pirata", {}, () => ["pick", { index: i++ }]);
+}
+await session("caixas", {}, (v) => (v.phase === "pick" ? ["pick", { box: 1 }] : ["final", { switch: true }]));
+await session("red-dog", {}, (v) => [v.spread >= 7 ? "raise" : "call", {}]);
+await session("guerra", {}, () => ["war", {}]);
+await session("let-it-ride", {}, () => ["ride", {}]);
+await session("bj-eu", {}, (v) => [v.hands[v.active]?.total < 17 ? "hit" : "stand", {}]);
+await session("bj-multi", { hands: 3 }, (v) => [v.hands[v.active]?.total < 15 ? "hit" : "stand", {}]);
+await session("bj-switch", {}, (v) => (v.phase === "switch" ? ["switch", {}] : [v.hands[v.active]?.total < 17 ? "hit" : "stand", {}]));
+await session("bj-213", { side: 10 }, (v) => [v.hands[v.active]?.total < 17 ? "hit" : "stand", {}]);
+for (const g of ["vp-deuces", "vp-double", "vp-joker"]) await session(g, {}, () => ["draw", { hold: [true, false, true, false, false] }]);
+// crash duplo / avião (saques automáticos baixos)
+{
+  const d = await call("POST", "/session/crash-duplo/start", { bet: 20, params: { auto0: 1.01, auto1: 1.02 } });
+  await new Promise((r) => setTimeout(r, 2300));
+  const dr = await call("POST", `/session/${d.roundId}/action`, { action: "poll", payload: {} });
+  const m = await call("GET", "/me");
+  ok("crash-duplo", dr.done && m.user.balance === balance - 20 + dr.payout, `prêmio ${dr.payout}`);
+  balance = m.user.balance;
+  const a = await call("POST", "/session/crash-aviao/start", { bet: 20, params: { autoCashout: 1.01 } });
+  await new Promise((r) => setTimeout(r, 2300));
+  const ar = await call("POST", `/session/${a.roundId}/action`, { action: "poll", payload: {} });
+  const m2 = await call("GET", "/me");
+  ok("crash-aviao", ar.done && m2.user.balance === balance - 20 + ar.payout, `prêmio ${ar.payout}`);
+  balance = m2.user.balance;
+}
+
 // validações
 for (const [name, path, body] of [
   ["aposta acima do saldo", "/play/dice", { bet: 10_000_000, params: { type: "even" } }],

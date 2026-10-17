@@ -3,7 +3,7 @@ import { config } from "./config.js";
 import { tx, pool, type Tx } from "./db.js";
 import { notifyAdmin } from "./notify.js";
 import { newClientSeed, newServerSeed, Rng, sha256 } from "./fair.js";
-import { GAMES } from "./games/registry.js";
+import { GAMES, LIVE_SESSION } from "./games/registry.js";
 import { GameError } from "./games/types.js";
 import { emptyLcState, lcPick, lcSpin, type LcState } from "./games/luckycards.js";
 import { dailyDeal, FIRST_PURCHASE_MULT, DAILY_DEAL_BONUS, findProduct, supporterTier, VIP_BONUS_MULT } from "./store.js";
@@ -235,9 +235,10 @@ export async function startSession(auth: AuthContext, game: string, betRaw: unkn
     const user = await lockUser(c, auth.user);
     const active = await c.query<RoundRow>("SELECT * FROM rounds WHERE user_id = $1 AND game = $2 AND status = 'active' FOR UPDATE", [user.id, game]);
     if (active.rows[0]) {
-      if (game === "crash") {
-        // fecha a rodada anterior de crash (o tempo já correu)
-        await actOnRound(c, user, active.rows[0], "poll", {});
+      if (LIVE_SESSION.has(game)) {
+        // fecha a rodada anterior de crash (o tempo já correu); se ainda estiver no ar, não abre outra
+        const prev = await actOnRound(c, user, active.rows[0], "poll", {});
+        if (!prev.done) throw new GameError("session_active", "Termine a rodada em andamento");
       } else {
         throw new GameError("session_active", "Termine a rodada em andamento");
       }

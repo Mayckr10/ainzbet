@@ -17,13 +17,15 @@ import { Avatar, BalancePill, ChipIcon, StarIcon, TierBadge, toast } from "../ui
 import { BottomNav } from "./BottomNav";
 import { Brand, BrandLogo } from "../ui/Brand";
 
-const SECTIONS: { id: GameMeta["cat"]; title: string; sub: string }[] = [
-  { id: "slots", title: "Slots exclusivos", sub: "13 slots com arte própria · até 50.000x" },
-  { id: "originals", title: "Originais AinzBet", sub: "Rodadas rápidas e verificáveis" },
-  { id: "table", title: "Roletas", sub: "Mesa clássica" },
-  { id: "cards", title: "Cartas", sub: "Blackjack, bacará e pôquer" },
-  { id: "lottery", title: "Sorteios", sub: "Keno, raspadinha e bingo" },
+const SECTIONS: { id: GameMeta["cat"]; title: string; sub: string; icon: string }[] = [
+  { id: "slots", title: "Slots exclusivos", sub: "Arte própria · até 50.000x", icon: "🎰" },
+  { id: "originals", title: "Originais AinzBet", sub: "Rodadas rápidas e verificáveis", icon: "🚀" },
+  { id: "cards", title: "Cartas", sub: "Blackjack, bacará e pôquer", icon: "🃏" },
+  { id: "table", title: "Roletas", sub: "Mesa clássica", icon: "🎡" },
+  { id: "lottery", title: "Sorteios", sub: "Loterias, bingo e raspadinhas", icon: "🎱" },
+  { id: "arcade", title: "Arcade", sub: "Jogos casuais com prêmios", icon: "🕹️" },
 ];
+const norm = (x: string) => x.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
 const RIBBON: Record<string, { text: string; cls: string }> = {
   cosmic: { text: "NOVO", cls: "bg-gradient-to-r from-fuchsia-500 to-violet-500" },
@@ -32,6 +34,11 @@ const RIBBON: Record<string, { text: string; cls: string }> = {
   "vs-farao": { text: "NOVO", cls: "bg-gradient-to-r from-fuchsia-500 to-violet-500" },
   "vs-olimpo": { text: "NOVO", cls: "bg-gradient-to-r from-fuchsia-500 to-violet-500" },
   "vs-savana": { text: "NOVO", cls: "bg-gradient-to-r from-fuchsia-500 to-violet-500" },
+  galinha: { text: "NOVO", cls: "bg-gradient-to-r from-fuchsia-500 to-violet-500" },
+  "crash-duplo": { text: "NOVO", cls: "bg-gradient-to-r from-fuchsia-500 to-violet-500" },
+  hilo: { text: "NOVO", cls: "bg-gradient-to-r from-fuchsia-500 to-violet-500" },
+  "baccarat-lightning": { text: "NOVO", cls: "bg-gradient-to-r from-fuchsia-500 to-violet-500" },
+  bicho: { text: "NOVO", cls: "bg-gradient-to-r from-fuchsia-500 to-violet-500" },
   mines: { text: "HOT", cls: "bg-gradient-to-r from-orange-500 to-red-500" },
   plinko: { text: "HOT", cls: "bg-gradient-to-r from-orange-500 to-red-500" },
 };
@@ -42,6 +49,8 @@ export default function Lobby({ openBonus }: { openBonus?: boolean }) {
   const cfgNames = useApp((s) => s.config?.games ?? {});
   const [feed, setFeed] = useState<any[]>([]);
   const [, tick] = useState(0);
+  const [query, setQuery] = useState("");
+  const [open, setOpen] = useState<string | null>(null);
   useEffect(() => onBackButton(null), []);
   useEffect(() => {
     const load = () => api.get("/feed").then((r) => setFeed(r.wins)).catch(() => {});
@@ -161,27 +170,61 @@ export default function Lobby({ openBonus }: { openBonus?: boolean }) {
           </div>
         )}
 
-        {/* seções */}
-        {SECTIONS.map((sec) => {
-          const games = GAMES.filter((g) => g.cat === sec.id);
-          const big = sec.id === "slots";
-          return (
-            <section key={sec.id} className="mt-6">
-              <div className="px-4 flex items-end justify-between mb-2.5">
-                <div>
-                  <div className="section-title">{sec.title}</div>
-                  <div className="text-[11px] text-white/45 font-bold">{sec.sub}</div>
+        {/* busca e atalhos */}
+        <div className="px-4 mt-5">
+          <div className="flex items-center gap-2 rounded-2xl px-3 h-11 bg-white/[0.05] border border-white/[0.08]">
+            <span className="text-white/40">🔍</span>
+            <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={`Buscar entre ${GAMES.length} jogos`} className="flex-1 bg-transparent outline-none text-sm font-bold placeholder:text-white/30" />
+            {query && <button onClick={() => setQuery("")} className="text-white/50 text-sm press">✕</button>}
+          </div>
+          {!query && (
+            <div className="flex gap-1.5 mt-2.5 overflow-x-auto no-scrollbar">
+              {SECTIONS.map((sec) => (
+                <button key={sec.id} onClick={() => document.getElementById(`sec-${sec.id}`)?.scrollIntoView({ behavior: "smooth", block: "start" })} className="press shrink-0 rounded-full px-3 h-8 text-[11px] font-black bg-white/[0.06] border border-white/[0.08] text-white/75">
+                  {sec.icon} {sec.title.split(" ")[0]}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {query ? (
+          <div className="px-4 mt-4 grid grid-cols-3 gap-2.5">
+            {GAMES.filter((g) => norm(cfgNames[g.id] ?? g.name).includes(norm(query)) || norm(g.tag ?? "").includes(norm(query))).map((g, i) => (
+              <GameTile key={g.id} game={g} name={cfgNames[g.id] ?? g.name} index={i} grid />
+            ))}
+          </div>
+        ) : (
+          SECTIONS.map((sec) => {
+            const games = GAMES.filter((g) => g.cat === sec.id);
+            const big = sec.id === "slots";
+            const expanded = open === sec.id;
+            return (
+              <section key={sec.id} id={`sec-${sec.id}`} className="mt-6 scroll-mt-4">
+                <div className="px-4 flex items-end justify-between mb-2.5">
+                  <div>
+                    <div className="section-title">{sec.title}</div>
+                    <div className="text-[11px] text-white/45 font-bold">{sec.sub} · {games.length} jogos</div>
+                  </div>
+                  {games.length > 3 && (
+                    <button onClick={() => setOpen(expanded ? null : sec.id)} className="press text-[11px] font-black text-gold-300">{expanded ? "MENOS" : "VER TODOS"}</button>
+                  )}
                 </div>
-                <span className="text-[11px] font-black text-white/35">{games.length} jogos</span>
-              </div>
-              <div className="flex gap-2.5 overflow-x-auto no-scrollbar px-4 snap-x snap-mandatory pb-1">
-                {games.map((g, i) => (
-                  <GameTile key={g.id} game={g} name={cfgNames[g.id] ?? g.name} index={i} big={big} />
-                ))}
-              </div>
-            </section>
-          );
-        })}
+                {expanded ? (
+                  <div className="px-4 grid grid-cols-3 gap-2.5">
+                    {games.map((g, i) => <GameTile key={g.id} game={g} name={cfgNames[g.id] ?? g.name} index={i} grid />)}
+                  </div>
+                ) : (
+                  <div className="flex gap-2.5 overflow-x-auto no-scrollbar px-4 snap-x snap-mandatory pb-1">
+                    {games.map((g, i) => (
+                      <GameTile key={g.id} game={g} name={cfgNames[g.id] ?? g.name} index={i} big={big} />
+                    ))}
+                  </div>
+                )}
+              </section>
+            );
+          })
+        )}
 
         {/* grupo */}
         <div className="px-4 mt-7 grid grid-cols-2 gap-3">
@@ -317,7 +360,7 @@ function Hero({ firstPurchase }: { firstPurchase: boolean }) {
 }
 
 /* ======================================================= cartão do jogo */
-function GameTile({ game, name, index, big }: { game: GameMeta; name: string; index: number; big?: boolean }) {
+function GameTile({ game, name, index, big, grid }: { game: GameMeta; name: string; index: number; big?: boolean; grid?: boolean }) {
   const ribbon = RIBBON[game.id];
   return (
     <motion.button
@@ -330,7 +373,7 @@ function GameTile({ game, name, index, big }: { game: GameMeta; name: string; in
         sfx.click();
         nav.push({ name: "game", id: game.id });
       }}
-      className={cls("relative shrink-0 snap-start rounded-[20px] overflow-hidden text-left tile-frame", big ? "w-[150px] h-[204px]" : "w-[112px] h-[150px]")}
+      className={cls("relative shrink-0 snap-start rounded-[20px] overflow-hidden text-left tile-frame", grid ? "w-full aspect-[112/150]" : big ? "w-[150px] h-[204px]" : "w-[112px] h-[150px]")}
       style={{ ["--tile-bg" as any]: game.colors[1] }}
     >
       <div className="absolute inset-0" style={{ background: `linear-gradient(165deg, ${game.colors[0]} 0%, ${game.colors[1]} 85%)` }} />

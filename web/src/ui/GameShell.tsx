@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { api, ApiError, MESSAGES } from "../lib/api";
 import { cls, fmt, fmtMult } from "../lib/format";
 import { appStore, revealBalance, setBalance, showDebit, useApp } from "../lib/store";
@@ -14,6 +14,7 @@ export function GameShell({
   info,
   className,
   headerExtra,
+  bg,
 }: {
   title: string;
   game: string;
@@ -22,12 +23,14 @@ export function GameShell({
   info?: ReactNode;
   className?: string;
   headerExtra?: ReactNode;
+  /** fundo próprio do jogo (substitui a nebulosa) */
+  bg?: string;
 }) {
   const [showInfo, setShowInfo] = useState(false);
   const [showHist, setShowHist] = useState(false);
   useEffect(() => onBackButton(() => nav.back()), []);
   return (
-    <div className={cls("fixed inset-0 flex flex-col overflow-hidden", className ?? "nebula-bg")}>
+    <div className={cls("fixed inset-0 flex flex-col overflow-hidden", className ?? (bg ? "" : "nebula-bg"))} style={bg ? ({ background: bg } as CSSProperties) : undefined}>
       <div className="absolute inset-0 overflow-hidden pointer-events-none"><div className="aurora" /></div>
       <div className="stars-layer" />
       <header className="relative z-10 flex items-center gap-2 px-3 pb-2" style={{ paddingTop: "calc(var(--safe-top) + 10px)" }}>

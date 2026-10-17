@@ -12,7 +12,66 @@ import Store from "./screens/Store";
 import Ranking from "./screens/Ranking";
 import Profile from "./screens/Profile";
 
+type Loader = () => Promise<{ default: (p: { id: string }) => React.ReactElement }>;
+/** Mesma tela genérica para vários jogos (passa o id). */
+const withId = (load: Loader, id: string) => lazy(() => load().then((m) => ({ default: () => <m.default id={id} /> })));
+const grid: Loader = () => import("./games/w1/GridGame");
+const tower: Loader = () => import("./games/w1/TowerLadder");
+const pick: Loader = () => import("./games/w1/PickGame");
+const bj: Loader = () => import("./games/w1/BlackjackPro");
+const vp: Loader = () => import("./games/w1/VideoPokerPro");
+const live = () => import("./games/w1/LiveCrash") as unknown as ReturnType<Loader>;
+
 const GAME_COMPONENTS: Record<string, React.LazyExoticComponent<() => React.ReactElement>> = {
+  // ---- Onda 1
+  "crash-duplo": withId(live, "crash-duplo"),
+  "crash-aviao": withId(live, "crash-aviao"),
+  hilo: lazy(() => import("./games/w1/HiLo")),
+  overunder: lazy(() => import("./games/w1/OverUnder")),
+  wheel: lazy(() => import("./games/w1/Wheel")),
+  bolhas: withId(grid, "bolhas"),
+  mines7: withId(grid, "mines7"),
+  tesouro: withId(grid, "tesouro"),
+  escada: withId(tower, "escada"),
+  maca: withId(tower, "maca"),
+  galinha: lazy(() => import("./games/w1/Galinha")),
+  blocos: lazy(() => import("./games/w1/Blocos")),
+  penalti: lazy(() => import("./games/w1/Penalti")),
+  moedas: lazy(() => import("./games/w1/Moedas")),
+  diamantes: lazy(() => import("./games/w1/Diamantes")),
+  "cofre-secreto": lazy(() => import("./games/w1/CofreSecreto")),
+  "plinko-duo": lazy(() => import("./games/w1/PlinkoDuo")),
+  "limbo-turbo": lazy(() => import("./games/w1/LimboTurbo")),
+  "dragon-tiger": lazy(() => import("./games/w1/DragonTiger")),
+  "andar-bahar": lazy(() => import("./games/w1/AndarBahar")),
+  "bj-eu": withId(bj, "bj-eu"),
+  "bj-multi": withId(bj, "bj-multi"),
+  "bj-switch": withId(bj, "bj-switch"),
+  "bj-213": withId(bj, "bj-213"),
+  "vp-deuces": withId(vp, "vp-deuces"),
+  "vp-double": withId(vp, "vp-double"),
+  "vp-joker": withId(vp, "vp-joker"),
+  "let-it-ride": lazy(() => import("./games/w1/LetItRide")),
+  "baccarat-lightning": lazy(() => import("./games/w1/BaccaratLightning")),
+  "red-dog": lazy(() => import("./games/w1/RedDog")),
+  guerra: lazy(() => import("./games/w1/Guerra")),
+  "scratch-farao": lazy(() => import("./games/w1/ScratchFarao")),
+  "bau-pirata": lazy(() => import("./games/w1/BauPirata")),
+  "scratch-mult": lazy(() => import("./games/w1/ScratchMult")),
+  megasena: lazy(() => import("./games/w1/MegaSena")),
+  bingo90: lazy(() => import("./games/w1/Bingo90")),
+  "bingo-flash": lazy(() => import("./games/w1/BingoFlash")),
+  "keno-turbo": lazy(() => import("./games/w1/KenoTurbo")),
+  bicho: lazy(() => import("./games/w1/Bicho")),
+  "loto-dados": lazy(() => import("./games/w1/LotoDados")),
+  pescaria: withId(pick, "pescaria"),
+  "cofre-banco": withId(pick, "cofre-banco"),
+  garra: lazy(() => import("./games/w1/Garra")),
+  "tiro-alvo": lazy(() => import("./games/w1/TiroAlvo")),
+  foguetes: lazy(() => import("./games/w1/Foguetes")),
+  caixas: lazy(() => import("./games/w1/Caixas")),
+  dardos: lazy(() => import("./games/w1/Dardos")),
+  "fruta-neon": lazy(() => import("./games/w1/FrutaNeon")),
   cosmic: lazy(() => import("./games/Cosmic")),
   "slots-fruit": lazy(() => import("./games/Abyss")),
   "slots-classic": lazy(() => import("./games/Forge")),

@@ -3,6 +3,7 @@ import { COSMIC_ART } from "./cosmic";
 import { ABYSS_ART } from "./abyss";
 import { FORGE_ART } from "./forge";
 import { SLOT_THEMES } from "./themes";
+import { GAMES2, GAME_ICONS2 } from "./gameIcons2";
 
 const card = (x: number, y: number, r: number, label: string, red = false) => (
   <g transform={`rotate(${r} ${x + 16} ${y + 22})`}>
@@ -13,6 +14,7 @@ const card = (x: number, y: number, r: number, label: string, red = false) => (
 
 /** Ícones dos jogos no lobby (viewBox 0 0 100 100). */
 export const GAME_ICONS: Record<string, ReactNode> = {
+  ...GAME_ICONS2,
   ...Object.fromEntries(Object.values(SLOT_THEMES).map((t) => [t.id, t.art[t.icon]])),
   cosmic: COSMIC_ART[11],
   "slots-fruit": ABYSS_ART[2],
@@ -136,7 +138,7 @@ function Roulette({ double }: { double?: boolean }) {
   );
 }
 
-export type GameMeta = { id: string; name: string; tag?: string; cat: "slots" | "originals" | "table" | "cards" | "lottery"; colors: [string, string]; max?: string };
+export type GameMeta = { id: string; name: string; tag?: string; cat: "slots" | "originals" | "table" | "cards" | "lottery" | "arcade"; colors: [string, string]; max?: string };
 
 export const GAMES: GameMeta[] = [
   { id: "cosmic", name: "Oráculo Cósmico", tag: "50.000x", cat: "slots", colors: ["#4c1d95", "#0e7490"], max: "50.000x" },
@@ -169,4 +171,5 @@ export const GAMES: GameMeta[] = [
   { id: "keno", name: "Keno", cat: "lottery", colors: ["#312e81", "#1e1b4b"], max: "1.500x" },
   { id: "scratch", name: "Raspadinha", cat: "lottery", colors: ["#6b21a8", "#831843"], max: "1.000x" },
   { id: "bingo", name: "Bingo", cat: "lottery", colors: ["#9d174d", "#4c1d95"], max: "10.000x" },
+  ...GAMES2,
 ];

@@ -1,0 +1,42 @@
+{
+  "vs-savana": {
+    "scale": 1.8112,
+    "buyPrice": 42
+  },
+  "vs-gemas": {
+    "scale": 3.7507,
+    "buyPrice": 34
+  },
+  "vs-farao": {
+    "scale": 1.8375,
+    "buyPrice": 78
+  },
+  "vs-piratas": {
+    "scale": 2.9703,
+    "buyPrice": 67
+  },
+  "vs-dragao": {
+    "scale": 3.7933,
+    "buyPrice": 33
+  },
+  "vs-floresta": {
+    "scale": 2.7219,
+    "buyPrice": 80
+  },
+  "vs-olimpo": {
+    "scale": 1.6489,
+    "buyPrice": 20
+  },
+  "vs-cyber": {
+    "scale": 2.8665,
+    "buyPrice": 66
+  },
+  "vs-asteca": {
+    "scale": 1.812,
+    "buyPrice": 42
+  },
+  "vs-artico": {
+    "scale": 3.7516,
+    "buyPrice": 35
+  }
+}

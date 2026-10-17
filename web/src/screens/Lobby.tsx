@@ -18,7 +18,7 @@ import { BottomNav } from "./BottomNav";
 import { Brand, BrandLogo } from "../ui/Brand";
 
 const SECTIONS: { id: GameMeta["cat"]; title: string; sub: string }[] = [
-  { id: "slots", title: "Slots exclusivos", sub: "Arte própria · até 50.000x" },
+  { id: "slots", title: "Slots exclusivos", sub: "13 slots com arte própria · até 50.000x" },
   { id: "originals", title: "Originais AinzBet", sub: "Rodadas rápidas e verificáveis" },
   { id: "table", title: "Roletas", sub: "Mesa clássica" },
   { id: "cards", title: "Cartas", sub: "Blackjack, bacará e pôquer" },
@@ -29,6 +29,9 @@ const RIBBON: Record<string, { text: string; cls: string }> = {
   cosmic: { text: "NOVO", cls: "bg-gradient-to-r from-fuchsia-500 to-violet-500" },
   crash: { text: "AO VIVO", cls: "bg-gradient-to-r from-emerald-500 to-green-600" },
   "slots-fruit": { text: "BÔNUS", cls: "bg-gradient-to-r from-cyan-500 to-sky-600" },
+  "vs-farao": { text: "NOVO", cls: "bg-gradient-to-r from-fuchsia-500 to-violet-500" },
+  "vs-olimpo": { text: "NOVO", cls: "bg-gradient-to-r from-fuchsia-500 to-violet-500" },
+  "vs-savana": { text: "NOVO", cls: "bg-gradient-to-r from-fuchsia-500 to-violet-500" },
   mines: { text: "HOT", cls: "bg-gradient-to-r from-orange-500 to-red-500" },
   plinko: { text: "HOT", cls: "bg-gradient-to-r from-orange-500 to-red-500" },
 };

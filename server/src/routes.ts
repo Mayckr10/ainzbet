@@ -8,6 +8,7 @@ import { KENO_TABLE, PLINKO_TABLES, SCRATCH_TIERS, BINGO_PAYS, BINGO_BLACKOUT, B
 import { CLASSIC, WHEELS, FRUIT, MAX_WIN } from "./games/slots.js";
 import { LC, LC_PAYS, LC_SYMBOLS } from "./games/luckycards.js";
 import { TOWER_MODES, TOWER_LEVELS, VP_PAYS } from "./games/sessions.js";
+import { videoSlotsPublicConfig } from "./games/videoslots.js";
 import * as svc from "./service.js";
 import { CHIP_PACKS, VIP, DONATION_AMOUNTS, DONATION_CHIPS_PER_STAR, dailyDeal, SUPPORTER_TIERS, VIP_BONUS_MULT, FIRST_PURCHASE_MULT, DAILY_DEAL_BONUS } from "./store.js";
 import { createInvoice, prepareShare } from "./bot.js";
@@ -61,6 +62,7 @@ export async function routes(app: FastifyInstance) {
     tower: { modes: TOWER_MODES, levels: TOWER_LEVELS },
     videopoker: VP_PAYS,
     maxWin: MAX_WIN,
+    videoSlots: videoSlotsPublicConfig(),
   }));
 
   app.post<{ Body: { kind: "daily" | "rescue" } }>("/bonus", async (req) => ({ user: await svc.claimBonus(req.auth, req.body?.kind === "rescue" ? "rescue" : "daily") }));

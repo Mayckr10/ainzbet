@@ -50,6 +50,10 @@ const instant: [string, any][] = [
 ];
 const card = Array.from({ length: 25 }, (_, i) => (i === 12 ? 0 : (i % 5) * 15 + Math.floor(i / 5) + 1));
 instant.push(["bingo", { card }]);
+for (const id of ["vs-savana", "vs-gemas", "vs-farao", "vs-piratas", "vs-dragao", "vs-floresta", "vs-olimpo", "vs-cyber", "vs-asteca", "vs-artico"]) {
+  instant.push([id, {}]);
+}
+instant.push(["vs-farao", { buy: true }]);
 for (const [g, params] of instant) {
   const r = await call("POST", `/play/${g}`, { bet: 10, params });
   const expected = balance - r.bet + r.payout;

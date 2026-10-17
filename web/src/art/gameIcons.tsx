@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { COSMIC_ART } from "./cosmic";
 import { ABYSS_ART } from "./abyss";
 import { FORGE_ART } from "./forge";
+import { SLOT_THEMES } from "./themes";
 
 const card = (x: number, y: number, r: number, label: string, red = false) => (
   <g transform={`rotate(${r} ${x + 16} ${y + 22})`}>
@@ -12,6 +13,7 @@ const card = (x: number, y: number, r: number, label: string, red = false) => (
 
 /** Ícones dos jogos no lobby (viewBox 0 0 100 100). */
 export const GAME_ICONS: Record<string, ReactNode> = {
+  ...Object.fromEntries(Object.values(SLOT_THEMES).map((t) => [t.id, t.art[t.icon]])),
   cosmic: COSMIC_ART[11],
   "slots-fruit": ABYSS_ART[2],
   "slots-classic": FORGE_ART[1],
@@ -140,6 +142,16 @@ export const GAMES: GameMeta[] = [
   { id: "cosmic", name: "Oráculo Cósmico", tag: "50.000x", cat: "slots", colors: ["#4c1d95", "#0e7490"], max: "50.000x" },
   { id: "slots-fruit", name: "Jardim Abissal", tag: "Giros grátis", cat: "slots", colors: ["#0c4a6e", "#312e81"], max: "50.000x" },
   { id: "slots-classic", name: "Forja do Dragão", tag: "Roda 50.000x", cat: "slots", colors: ["#7f1d1d", "#78350f"], max: "50.000x" },
+  { id: "vs-farao", name: "Livro do Faraó", tag: "Símbolo expansivo", cat: "slots", colors: SLOT_THEMES["vs-farao"].tile, max: "50.000x" },
+  { id: "vs-savana", name: "Rei da Savana", tag: "Leões expansivos", cat: "slots", colors: SLOT_THEMES["vs-savana"].tile, max: "50.000x" },
+  { id: "vs-gemas", name: "Cofre de Gemas", tag: "Wilds multiplicadores", cat: "slots", colors: SLOT_THEMES["vs-gemas"].tile, max: "50.000x" },
+  { id: "vs-olimpo", name: "Trono do Olimpo", tag: "Orbes até 100x", cat: "slots", colors: SLOT_THEMES["vs-olimpo"].tile, max: "50.000x" },
+  { id: "vs-dragao", name: "Dragão Imperial", tag: "Multiplicador crescente", cat: "slots", colors: SLOT_THEMES["vs-dragao"].tile, max: "50.000x" },
+  { id: "vs-piratas", name: "Ouro dos Piratas", tag: "Wilds presos", cat: "slots", colors: SLOT_THEMES["vs-piratas"].tile, max: "50.000x" },
+  { id: "vs-floresta", name: "Floresta Encantada", tag: "Wilds aleatórios", cat: "slots", colors: SLOT_THEMES["vs-floresta"].tile, max: "50.000x" },
+  { id: "vs-cyber", name: "Neon Cyber", tag: "Wilds travados", cat: "slots", colors: SLOT_THEMES["vs-cyber"].tile, max: "50.000x" },
+  { id: "vs-asteca", name: "Templo Asteca", tag: "Máscaras expansivas", cat: "slots", colors: SLOT_THEMES["vs-asteca"].tile, max: "50.000x" },
+  { id: "vs-artico", name: "Lobo Ártico", tag: "Lobos multiplicadores", cat: "slots", colors: SLOT_THEMES["vs-artico"].tile, max: "50.000x" },
   { id: "crash", name: "Crash", tag: "Ao vivo", cat: "originals", colors: ["#14532d", "#1e1b4b"], max: "50.000x" },
   { id: "mines", name: "Mines", cat: "originals", colors: ["#1e3a8a", "#065f46"] },
   { id: "plinko", name: "Plinko", cat: "originals", colors: ["#831843", "#4c1d95"], max: "1.000x" },

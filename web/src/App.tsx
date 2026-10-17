@@ -35,6 +35,8 @@ const GAME_COMPONENTS: Record<string, React.LazyExoticComponent<() => React.Reac
   limbo: lazy(() => import("./games/Limbo")),
 };
 
+const VideoSlotLazy = lazy(() => import("./games/VideoSlot"));
+
 export default function App() {
   const route = useRoute();
   const user = useApp((s) => s.user);
@@ -52,7 +54,7 @@ export default function App() {
         if (screen === "store" || screen === "ranking" || screen === "profile" || screen === "settings" || screen === "fair") nav.push({ name: screen });
         if (sp?.startsWith("game_")) {
           const id = sp.slice(5);
-          if (GAME_COMPONENTS[id]) nav.push({ name: "game", id });
+          if (GAME_COMPONENTS[id] || id.startsWith("vs-")) nav.push({ name: "game", id });
         }
       })
       .catch((e) => appStore.set({ error: e?.message ?? "Falha ao conectar" }))
@@ -87,7 +89,7 @@ export default function App() {
   switch (route.name) {
     case "game": {
       const G = GAME_COMPONENTS[route.id];
-      screen = G ? <G key={route.id} /> : <Lobby />;
+      screen = route.id.startsWith("vs-") ? <VideoSlotLazy key={route.id} id={route.id} /> : G ? <G key={route.id} /> : <Lobby />;
       break;
     }
     case "store":

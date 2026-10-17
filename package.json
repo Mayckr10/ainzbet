@@ -17,7 +17,8 @@
     "start": "node server/dist/index.js",
     "typecheck": "tsc -p server/tsconfig.json --noEmit && tsc -p web/tsconfig.json --noEmit",
     "rtp": "tsx scripts/rtp.ts",
-    "localdb": "tsx scripts/localdb.ts"
+    "localdb": "tsx scripts/localdb.ts",
+    "calibrate": "tsx scripts/calibrate.ts"
   },
   "dependencies": {
     "@fastify/cors": "^11.3.1",

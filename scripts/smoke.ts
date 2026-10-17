@@ -58,6 +58,8 @@ for (const id of ["vs-nilo", "vs-tigre", "vs-vikings", "vs-vampiro", "vs-samurai
   instant.push([id, {}]);
 }
 instant.push(["vs-gelo", { variant: "fogo" }], ["vs-gelo", { variant: "gelo", buy: true }], ["vs-inca", { variant: "7" }], ["vs-inca", { variant: "2", buy: true }]);
+for (const id of ["as-avalanche", "as-doceria", "as-mega", "as-colmeia", "as-cristal", "as-holdwin", "as-duplo", "as-piramide", "as-rodas", "vs-gigantes"]) instant.push([id, {}]);
+for (const id of ["as-avalanche", "as-doceria", "as-mega", "as-colmeia", "as-cristal", "as-holdwin", "as-duplo", "vs-gigantes"]) instant.push([id, { buy: true }]);
 instant.push(["vs-romano", { buy: true }], ["vs-minotauro", { buy: true }], ["vs-vikings", { buy: true }], ["vs-robos", { buy: true }]);
 for (const [g, params] of instant) {
   const r = await call("POST", `/play/${g}`, { bet: 10, params });

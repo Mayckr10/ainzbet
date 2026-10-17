@@ -10,6 +10,7 @@ import { LC, LC_PAYS, LC_SYMBOLS } from "./games/luckycards.js";
 import { TOWER_MODES, TOWER_LEVELS, VP_PAYS } from "./games/sessions.js";
 import { videoSlotsPublicConfig } from "./games/videoslots.js";
 import { VP_TABLES } from "./games/cards2.js";
+import { advPublicConfig } from "./games/advslots.js";
 import * as svc from "./service.js";
 import { CHIP_PACKS, VIP, DONATION_AMOUNTS, DONATION_CHIPS_PER_STAR, dailyDeal, SUPPORTER_TIERS, VIP_BONUS_MULT, FIRST_PURCHASE_MULT, DAILY_DEAL_BONUS } from "./store.js";
 import { createInvoice, prepareShare } from "./bot.js";
@@ -65,6 +66,7 @@ export async function routes(app: FastifyInstance) {
     maxWin: MAX_WIN,
     videoSlots: videoSlotsPublicConfig(),
     vpTables: VP_TABLES,
+    adv: advPublicConfig(),
   }));
 
   app.post<{ Body: { kind: "daily" | "rescue" } }>("/bonus", async (req) => ({ user: await svc.claimBonus(req.auth, req.body?.kind === "rescue" ? "rescue" : "daily") }));
@@ -81,6 +83,10 @@ export async function routes(app: FastifyInstance) {
     svc.sessionAction(req.auth, Number(req.params.id), String(req.body?.action ?? ""), req.body?.payload ?? {}),
   );
 
+  app.get<{ Params: { game: string } }>("/game-state/:game", async (req) => {
+    const r = await pool.query("SELECT state FROM user_game_state WHERE user_id = $1 AND game = $2", [req.auth.user.id, req.params.game]);
+    return { state: r.rows[0]?.state ?? null };
+  });
   app.get("/cosmic/state", async (req) => ({ machine: await svc.machineState(req.auth) }));
   app.post<{ Body: { bet: number } }>("/cosmic/spin", async (req) => svc.machineSpin(req.auth, req.body?.bet));
   app.post<{ Body: { index: number } }>("/cosmic/pick", async (req) => svc.machinePick(req.auth, Number(req.body?.index)));

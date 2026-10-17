@@ -20,6 +20,7 @@ const tower: Loader = () => import("./games/w1/TowerLadder");
 const pick: Loader = () => import("./games/w1/PickGame");
 const bj: Loader = () => import("./games/w1/BlackjackPro");
 const vp: Loader = () => import("./games/w1/VideoPokerPro");
+const cascade: Loader = () => import("./games/w3/CascadeSlot");
 const live = () => import("./games/w1/LiveCrash") as unknown as ReturnType<Loader>;
 
 const GAME_COMPONENTS: Record<string, React.LazyExoticComponent<() => React.ReactElement>> = {
@@ -72,6 +73,16 @@ const GAME_COMPONENTS: Record<string, React.LazyExoticComponent<() => React.Reac
   caixas: lazy(() => import("./games/w1/Caixas")),
   dardos: lazy(() => import("./games/w1/Dardos")),
   "fruta-neon": lazy(() => import("./games/w1/FrutaNeon")),
+  // ---- Onda 3
+  "as-avalanche": withId(cascade, "as-avalanche"),
+  "as-doceria": withId(cascade, "as-doceria"),
+  "as-mega": withId(cascade, "as-mega"),
+  "as-colmeia": withId(cascade, "as-colmeia"),
+  "as-cristal": withId(cascade, "as-cristal"),
+  "as-holdwin": lazy(() => import("./games/w3/HoldWin")),
+  "as-duplo": lazy(() => import("./games/w3/TwinSlot")),
+  "as-piramide": lazy(() => import("./games/w3/Pyramid")),
+  "as-rodas": lazy(() => import("./games/w3/WheelSlot")),
   cosmic: lazy(() => import("./games/Cosmic")),
   "slots-fruit": lazy(() => import("./games/Abyss")),
   "slots-classic": lazy(() => import("./games/Forge")),

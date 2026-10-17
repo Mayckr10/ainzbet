@@ -150,5 +150,9 @@
   "vs-carnaval": {
     "scale": 3.7675,
     "buyPrice": 31
+  },
+  "vs-gigantes": {
+    "scale": 0.7231,
+    "buyPrice": 39
   }
 }

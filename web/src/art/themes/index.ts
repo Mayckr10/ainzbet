@@ -6,6 +6,7 @@ import { NILO, SAMURAI, TIGRE, VAMPIRO, VIKINGS } from "./themesD";
 import { CELTA, CORUJA, LUA, OESTE, RECIFE } from "./themesE";
 import { DOCES, GELO, INCA, MINOTAURO, SAFARI } from "./themesF";
 import { CARNAVAL, FAZENDA, KRAKEN, ROBOS, ROMANO } from "./themesG";
+import { TITAS } from "./themesH";
 
 export type SlotThemeMeta = {
   id: string;
@@ -159,6 +160,7 @@ function wave2(): Record<string, SlotThemeMeta> {
     mk("vs-fazenda", FAZENDA, ["#65a30d", "#dc2626", "#0a1204"], ["#fef08a", "#65a30d", "#991b1b"], "#bef264", "COLHEITA PRESA", "Nos giros grátis cada Espantalho (Wild) fica preso no lugar até o fim do bônus."),
     mk("vs-robos", ROBOS, ["#0ea5e9", "#f59e0b", "#060c16"], ["#e0f2fe", "#0369a1", "#c2410c"], "#7dd3fc", "MECHAS CRESCENTES", "Nos giros grátis cada Mecha (Wild) fica preso e cresce uma casa no próprio rolo a cada giro, até ocupar o rolo inteiro."),
     mk("vs-kraken", KRAKEN, ["#0d9488", "#be185d", "#02110f"], ["#a5f3fc", "#0d9488", "#831843"], "#5eead4", "TENTÁCULOS DO KRAKEN", "O Kraken (Wild) estica os tentáculos e ocupa o rolo inteiro. Nos giros grátis todos os ganhos valem x3."),
+    mk("vs-gigantes", TITAS, ["#ea580c", "#57534e", "#120805"], ["#fed7aa", "#c2410c", "#44403c"], "#fdba74", "ROLO GIGANTE", "Às vezes um símbolo gigante 3×3 ocupa os três rolos do meio. Nos giros grátis o rolo gigante aparece em todos os giros!", 2),
     mk("vs-carnaval", CARNAVAL, ["#16a34a", "#db2777", "#08120a"], ["#fef08a", "#16a34a", "#9d174d"], "#fde047", "DESFILE MULTIPLICADOR", "Nos giros grátis o desfile esquenta: o multiplicador começa em x1 e sobe +1 a cada giro com vitória."),
   ];
   return Object.fromEntries(list.map((t) => [t.id, t]));

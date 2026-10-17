@@ -4,6 +4,8 @@ import { ABYSS_ART } from "./abyss";
 import { FORGE_ART } from "./forge";
 import { SLOT_THEMES } from "./themes";
 import { GAMES2, GAME_ICONS2 } from "./gameIcons2";
+import { GEMAS } from "./themes/themesA";
+import { ANKH_GOLD, COLMEIA, CRISTAL, DOCERIA, DUPLO, MEGA, MOEDAS } from "./themes/themesH";
 
 const card = (x: number, y: number, r: number, label: string, red = false) => (
   <g transform={`rotate(${r} ${x + 16} ${y + 22})`}>
@@ -15,6 +17,30 @@ const card = (x: number, y: number, r: number, label: string, red = false) => (
 /** Ícones dos jogos no lobby (viewBox 0 0 100 100). */
 export const GAME_ICONS: Record<string, ReactNode> = {
   ...GAME_ICONS2,
+  "as-avalanche": GEMAS[2],
+  "as-doceria": DOCERIA[2],
+  "as-mega": MEGA[0],
+  "as-colmeia": COLMEIA[2],
+  "as-cristal": CRISTAL[2],
+  "as-holdwin": MOEDAS[10],
+  "as-duplo": DUPLO[2],
+  "as-piramide": ANKH_GOLD,
+  "as-rodas": (
+    <g filter="url(#a-soft)">
+      {[22, 50, 78].map((cx, k) => (
+        <g key={cx}>
+          <circle cx={cx} cy="50" r="15" fill="#1c1917" stroke="#fde68a" strokeWidth="2" />
+          {Array.from({ length: 8 }).map((_, i) => {
+            const a0 = (i / 8) * Math.PI * 2;
+            const a1 = ((i + 1) / 8) * Math.PI * 2;
+            return <path key={i} d={`M${cx} 50 L${cx + Math.cos(a0) * 14} ${50 + Math.sin(a0) * 14} A14 14 0 0 1 ${cx + Math.cos(a1) * 14} ${50 + Math.sin(a1) * 14} Z`} fill={i % 2 ? "#7f1d1d" : k === 1 ? "#5b21b6" : "#1e1b4b"} />;
+          })}
+          <circle cx={cx} cy="50" r="4" fill="#fde047" />
+          <path d={`M${cx - 4} 30 L${cx + 4} 30 L${cx} 37 Z`} fill="#fde047" />
+        </g>
+      ))}
+    </g>
+  ),
   ...Object.fromEntries(Object.values(SLOT_THEMES).map((t) => [t.id, t.art[t.icon]])),
   cosmic: COSMIC_ART[11],
   "slots-fruit": ABYSS_ART[2],
@@ -175,7 +201,17 @@ export const GAMES: GameMeta[] = [
     ["vs-robos", "Robôs Gigantes", "Wilds que crescem"],
     ["vs-kraken", "Lenda do Kraken", "Tentáculos wild"],
     ["vs-carnaval", "Carnaval do Rio", "Desfile multiplicador"],
+    ["vs-gigantes", "Rolos Gigantes", "Símbolo gigante 3x3"],
   ] as const).map(([id, name, tag]) => ({ id, name, tag, cat: "slots" as const, colors: SLOT_THEMES[id].tile, max: "50.000x" })),
+  { id: "as-avalanche", name: "Avalanche de Gemas", tag: "Cascata 15.625 formas", cat: "slots", colors: ["#1e3a8a", "#4c1d95"], max: "50.000x" },
+  { id: "as-doceria", name: "Doceria Explosiva", tag: "Paga em qualquer lugar", cat: "slots", colors: ["#9d174d", "#4c1d95"], max: "50.000x" },
+  { id: "as-mega", name: "Megafortuna 117.649", tag: "Megaways", cat: "slots", colors: ["#a16207", "#7f1d1d"], max: "50.000x" },
+  { id: "as-colmeia", name: "Colmeia Dourada", tag: "Clusters + favos", cat: "slots", colors: ["#b45309", "#422006"], max: "50.000x" },
+  { id: "as-cristal", name: "Minas de Cristal", tag: "Multiplicador dobra", cat: "slots", colors: ["#0c4a6e", "#3b0764"], max: "50.000x" },
+  { id: "as-holdwin", name: "Hold & Win das Moedas", tag: "Jackpot 1.000x", cat: "slots", colors: ["#a16207", "#14532d"], max: "50.000x" },
+  { id: "as-duplo", name: "Duplo Slot", tag: "Duas grades ligadas", cat: "slots", colors: ["#3730a3", "#9d174d"], max: "50.000x" },
+  { id: "as-piramide", name: "Jackpot em Pirâmide", tag: "Medidor persistente", cat: "slots", colors: ["#a16207", "#1e3a8a"], max: "50.000x" },
+  { id: "as-rodas", name: "Slot de Rodas", tag: "Três rodas da sorte", cat: "slots", colors: ["#991b1b", "#3b0764"], max: "1.000x" },
   { id: "crash", name: "Crash", tag: "Ao vivo", cat: "originals", colors: ["#14532d", "#1e1b4b"], max: "50.000x" },
   { id: "mines", name: "Mines", cat: "originals", colors: ["#1e3a8a", "#065f46"] },
   { id: "plinko", name: "Plinko", cat: "originals", colors: ["#831843", "#4c1d95"], max: "1.000x" },

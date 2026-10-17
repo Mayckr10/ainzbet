@@ -211,7 +211,19 @@ export async function playInstant(auth: AuthContext, game: string, betRaw: unkno
     checkTotal(total);
     if (user.balance < total) throw new GameError("insufficient_balance", "Saldo insuficiente");
     const { rng, nonce } = await nextRng(c, user);
+    // jogos com estado persistente (ex.: medidor da pirâmide): o estado anterior vai nos parâmetros da rodada
+    if ((g as any).stateful) {
+      const st = await c.query<{ state: any }>("SELECT state FROM user_game_state WHERE user_id = $1 AND game = $2 FOR UPDATE", [user.id, game]);
+      params = { ...(params ?? {}), __state: st.rows[0]?.state ?? null, bet };
+    }
     const out = g.play(rng, params, bet);
+    if ((g as any).stateful) {
+      await c.query(
+        `INSERT INTO user_game_state (user_id, game, state, updated_at) VALUES ($1, $2, $3, now())
+         ON CONFLICT (user_id, game) DO UPDATE SET state = EXCLUDED.state, updated_at = now()`,
+        [user.id, game, (out.result as any).stateAfter],
+      );
+    }
     const r = await c.query<{ id: number }>(
       `INSERT INTO rounds (user_id, game, status, bet, params, result, server_seed_hash, client_seed, nonce, chat_instance)
        VALUES ($1, $2, 'active', $3, $4, $5, $6, $7, $8, $9) RETURNING id`,

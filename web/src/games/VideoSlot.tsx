@@ -20,7 +20,7 @@ type VSpin = {
   wildMults: number[][] | null;
   orbs: { cell: [number, number]; value: number }[];
   expanded: { symbol: number; reels: number[]; mult: number } | null;
-  effects: { expandedWildReels: number[]; sticky: [number, number][]; randomWilds: [number, number][]; walking?: [number, number][]; bitten?: [number, number][]; grown?: [number, number][] };
+  effects: { expandedWildReels: number[]; sticky: [number, number][]; randomWilds: [number, number][]; walking?: [number, number][]; bitten?: [number, number][]; grown?: [number, number][]; giant?: number };
   cellMults?: number[][] | null;
   collected?: number;
   trail?: { from: number; to: number; prize: number };
@@ -71,6 +71,7 @@ export default function VideoSlot({ id }: { id: string }) {
   const [walkers, setWalkers] = useState<Set<string>>(new Set());
   const [trailPos, setTrailPos] = useState(0);
   const [duel, setDuel] = useState<{ rounds: boolean[]; mult: number; shown: number } | null>(null);
+  const [giant, setGiant] = useState<number | null>(null);
   const money = cfg?.feature === "money_collect";
   const introResolve = useRef<() => void>(() => {});
   const summaryResolve = useRef<() => void>(() => {});
@@ -89,6 +90,7 @@ export default function VideoSlot({ id }: { id: string }) {
     setWm(null);
     setOrbs(new Map());
     setCm(null);
+    setGiant(null);
     setBanner(null);
     reels.current?.start();
     await sleep(140);
@@ -108,6 +110,7 @@ export default function VideoSlot({ id }: { id: string }) {
       else if (s.effects.bitten?.length) setBanner(`MORDIDA! +${s.effects.bitten.length} WILD`);
       else if (s.effects.grown?.length) setBanner("CRESCEU!");
       else if (s.effects.walking?.length) setBanner("AVANÇAR!");
+      else if (s.effects.giant != null) setGiant(s.effects.giant);
       sfx.gem();
       haptic.impact("medium");
       reels.current?.setGrid(s.final);
@@ -392,8 +395,15 @@ export default function VideoSlot({ id }: { id: string }) {
               <Paylines lines={cfg?.lines ?? []} active={lines} reels={5} rows={3} colors={theme.lineColors} />
             </Reels>
             <AnimatePresence>
+              {giant != null && (
+                <motion.div key="giant" initial={{ scale: 0.3, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ opacity: 0 }} transition={{ type: "spring", damping: 14 }} className="absolute top-2 bottom-2 left-[21%] right-[21%] rounded-2xl z-10 p-2 pointer-events-none" style={{ background: theme.inner, boxShadow: `0 0 0 3px ${theme.accent}, 0 0 30px ${theme.accent}88` }}>
+                  <SymbolArt art={art[giant]} />
+                </motion.div>
+              )}
+            </AnimatePresence>
+            <AnimatePresence>
               {banner && (
-                <motion.div initial={{ scale: 0.4, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 1.3, opacity: 0 }} className="absolute inset-0 grid place-items-center pointer-events-none">
+                <motion.div initial={{ scale: 0.4, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 1.3, opacity: 0 }} className="absolute inset-0 grid place-items-center pointer-events-none z-20">
                   <div className="bg-black/70 rounded-2xl px-5 py-2.5 border border-white/10">
                     <div className="font-display font-black text-2xl bg-clip-text text-transparent" style={{ backgroundImage: theme.title }}>{banner}</div>
                   </div>

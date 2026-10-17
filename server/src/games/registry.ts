@@ -7,6 +7,7 @@ import * as O from "./originals2.js";
 import * as S2 from "./sessions2.js";
 import * as C2 from "./cards2.js";
 import * as L2 from "./lottery2.js";
+import { ADV_NAMES, ADV_SLOTS } from "./advslots.js";
 
 /** Todos os jogos de rodada única ou com etapas. O Oráculo Cósmico tem rota própria (estado persistente). */
 export const GAMES: Record<string, Game> = {
@@ -82,6 +83,8 @@ export const GAMES: Record<string, Game> = {
   maca: S2.makeLadder(S2.LADDERS.maca),
   dardos: O.darts,
   "fruta-neon": O.fruitCut,
+  // ---- Onda 3
+  ...ADV_SLOTS,
 };
 
 /** Jogos com rodada em tempo real: começar outra fecha a anterior (se já terminou). */
@@ -157,4 +160,5 @@ export const GAME_NAMES: Record<string, string> = {
   maca: "Maçã Dourada",
   dardos: "Dardos",
   "fruta-neon": "Corte da Fruta Neon",
+  ...ADV_NAMES,
 };

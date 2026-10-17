@@ -34,7 +34,8 @@ export type Feature =
   | "chosen_symbol" // símbolo expansivo escolhido pelo jogador
   | "trail" // a cada giro grátis o herói avança numa trilha com prêmios
   | "duel" // no fim dos giros grátis, duelo que multiplica o prêmio
-  | "growing_wilds"; // wilds presos que crescem uma casa por giro
+  | "growing_wilds" // wilds presos que crescem uma casa por giro
+  | "giant_reels"; // rolo gigante 3x3 no meio (às vezes no jogo base, sempre nos giros grátis)
 
 export type VideoSlotTheme = {
   id: string;
@@ -110,6 +111,7 @@ export const THEMES: VideoSlotTheme[] = [
   { id: "vs-fazenda", name: "Fazenda Feliz", feature: "sticky_wilds", symbols: ["Espantalho (Wild)", "Celeiro", "Vaca", "Porco", "Galinha", "Ovelha", "Milho", "Cenoura", "Abóbora", "Ovo"] },
   { id: "vs-robos", name: "Robôs Gigantes", feature: "growing_wilds", symbols: ["Mecha (Wild)", "Reator", "Robô alfa", "Robô ômega", "Nave", "Canhão", "Bateria", "Parafuso", "Chip", "Antena"] },
   { id: "vs-kraken", name: "Lenda do Kraken", feature: "expanding_wilds", symbols: ["Kraken (Wild)", "Navio fantasma", "Sereia", "Tritão", "Tubarão", "Âncora", "Tridente", "Concha", "Pérola", "Bússola"] },
+  { id: "vs-gigantes", name: "Rolos Gigantes", feature: "giant_reels", symbols: ["Titã (Wild)", "Vulcão", "Ciclope", "Golem", "Martelo", "Montanha", "Rocha", "Cristal", "Tocha", "Runa"] },
   { id: "vs-carnaval", name: "Carnaval do Rio", feature: "progressive_mult", symbols: ["Passista (Wild)", "Carro alegórico", "Rainha da bateria", "Mestre-sala", "Tamborim", "Máscara", "Pandeiro", "Confete", "Pluma", "Serpentina"] },
 ];
 
@@ -238,7 +240,7 @@ export type VSpin = {
   wildMults: number[][] | null;
   orbs: { cell: [number, number]; value: number }[];
   expanded: { symbol: number; reels: number[]; mult: number } | null;
-  effects: { expandedWildReels: number[]; sticky: [number, number][]; randomWilds: [number, number][]; walking?: [number, number][]; bitten?: [number, number][]; grown?: [number, number][] };
+  effects: { expandedWildReels: number[]; sticky: [number, number][]; randomWilds: [number, number][]; walking?: [number, number][]; bitten?: [number, number][]; grown?: [number, number][]; giant?: number };
   /** símbolos cortados (samurai): multiplicador por casa */
   cellMults?: number[][] | null;
   /** valor coletado pelos wilds (dinheiro) — já incluído em multiplier */
@@ -322,6 +324,13 @@ function playTheme(t: VideoSlotTheme, rng: Rng, buy: boolean, scaleOverride?: nu
           bitten.push([a, b]);
         }
       effects.bitten = bitten;
+    }
+    if (feat === "giant_reels" && (inFree || rng.float() < 0.18)) {
+      // um símbolo gigante ocupa os rolos 2, 3 e 4 inteiros
+      const opts = [0, 2, 3, 4, 5, 6, 7, 8, 9];
+      const g = opts[rng.weighted([1, 1, 1.2, 1.4, 1.6, 2.5, 2.5, 3, 3])];
+      for (let r = 1; r <= 3; r++) for (let w = 0; w < 3; w++) final[r][w] = g;
+      effects.giant = g;
     }
     let cellMults: number[][] | null = null;
     if (inFree && feat === "split_symbols") {

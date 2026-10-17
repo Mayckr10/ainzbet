@@ -1,0 +1,36 @@
+{
+  "as-avalanche": {
+    "scale": 0.0707,
+    "buyPrice": 26
+  },
+  "as-doceria": {
+    "scale": 1.5714,
+    "buyPrice": 33
+  },
+  "as-mega": {
+    "scale": 0.1281,
+    "buyPrice": 66
+  },
+  "as-colmeia": {
+    "scale": 2.5327,
+    "buyPrice": 22
+  },
+  "as-cristal": {
+    "scale": 3.3404,
+    "buyPrice": 33
+  },
+  "as-holdwin": {
+    "scale": 4.3692,
+    "buyPrice": 64
+  },
+  "as-duplo": {
+    "scale": 3.3457,
+    "buyPrice": 22
+  },
+  "as-piramide": {
+    "scale": 3.4627
+  },
+  "as-rodas": {
+    "scale": 0.4487
+  }
+}

@@ -418,6 +418,8 @@ function Machine() {
           <div className={cls("relative rounded-[22px] p-2 aspect-[5/3.5]", themeFree ? "bg-[#1d1206]" : "bg-space-900/90")}>
             <Reels
               ref={reels}
+              theme="cosmic"
+              live={[3]}
               reels={5}
               rows={3}
               initial={initial.current}

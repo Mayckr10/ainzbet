@@ -4,6 +4,7 @@ import { cls } from "../lib/format";
 import { sfx } from "../lib/sound";
 import { haptic } from "../lib/tg";
 import { speedFactor } from "../lib/store";
+import { fontReady, getSymbolBitmaps, hasFont, type SymbolBitmaps } from "./symbolCache";
 
 /**
  * Motor dos rolos (usado por todos os slots).
@@ -43,6 +44,10 @@ type Props = {
   aspect?: number; // altura/largura da célula
   /** cor do brilho da coluna em antecipação */
   anticipationColor?: string;
+  /** identificador do tema, usado no cache de bitmaps dos símbolos */
+  theme?: string;
+  /** símbolos que precisam do SVG ao vivo quando parados (ex.: valores desenhados por cima) */
+  live?: number[];
   children?: ReactNode;
 };
 
@@ -58,7 +63,7 @@ type ReelCtl = {
 };
 
 export const Reels = forwardRef<ReelsHandle, Props>(function Reels(
-  { reels, rows, initial, pool, renderSymbol, cellOverlay, highlight, cellClass, frameClass, gap = 6, aspect = 1, anticipationColor = "#fde047", children },
+  { reels, rows, initial, pool, renderSymbol, cellOverlay, highlight, cellClass, frameClass, gap = 6, aspect = 1, anticipationColor = "#fde047", theme = "slot", live, children },
   ref,
 ) {
   const [grid, setGridState] = useState(initial);
@@ -69,8 +74,36 @@ export const Reels = forwardRef<ReelsHandle, Props>(function Reels(
   const hurried = useRef(false);
   const wrap = useRef<HTMLDivElement>(null);
   const [cell, setCell] = useState({ w: 60, h: 60 });
+  const measured = useRef(false);
   const gridRef = useRef(grid);
   gridRef.current = grid;
+  const renderRef = useRef(renderSymbol);
+  renderRef.current = renderSymbol;
+
+  // símbolos rasterizados (giro fluido); refeito só quando o tamanho da célula muda
+  const symSize = Math.min(cell.w, cell.h) * 0.86;
+  // quando a fonte dos rótulos termina de carregar, refaz os bitmaps com ela
+  const [fontVer, setFontVer] = useState(hasFont() ? 1 : 0);
+  useEffect(() => {
+    if (!hasFont()) fontReady.then((ok) => ok && setFontVer(1));
+  }, []);
+  const [bitmaps, setBitmaps] = useState<{ map: Map<number, SymbolBitmaps>; px: number; pad: number } | null>(null);
+  useEffect(() => {
+    if (symSize < 20 || !measured.current) return;
+    let alive = true;
+    const t = setTimeout(async () => {
+      const all = [...new Set([...pool, ...initial.flat()])];
+      const { px, pad, bitmaps: proms } = getSymbolBitmaps(theme, all, (sym) => renderRef.current(sym, -1, -1) as React.ReactElement, symSize);
+      const map = new Map<number, SymbolBitmaps>();
+      await Promise.all([...proms].map(async ([sym, p]) => map.set(sym, await p)));
+      // usa o resultado se ainda for o tamanho atual ou se ainda não houver nenhum bitmap
+      setBitmaps((cur) => (alive || !cur ? { map, px, pad } : cur));
+    }, 0);
+    return () => {
+      alive = false;
+      clearTimeout(t);
+    };
+  }, [Math.round(symSize / 8), theme, fontVer]);
 
   useLayoutEffect(() => {
     const el = wrap.current;
@@ -79,6 +112,7 @@ export const Reels = forwardRef<ReelsHandle, Props>(function Reels(
       const W = el.clientWidth;
       const H = el.clientHeight;
       if (!W || !H) return;
+      measured.current = true;
       let w = (W - gap * (reels - 1)) / reels;
       let h = w * aspect;
       const maxH = (H - gap * (rows - 1)) / rows;
@@ -180,6 +214,8 @@ export const Reels = forwardRef<ReelsHandle, Props>(function Reels(
             cellClass={cellClass}
             anticipating={anticipating.has(r)}
             anticipationColor={anticipationColor}
+            bitmaps={bitmaps}
+            live={live}
           />
         ))}
         {children && <div className="absolute inset-0 pointer-events-none">{children}</div>}
@@ -189,11 +225,13 @@ export const Reels = forwardRef<ReelsHandle, Props>(function Reels(
 });
 
 function Reel({
-  index, rows, cell, gap, symbols, pool, register, renderSymbol, cellOverlay, highlight, changed, cellClass, anticipating, anticipationColor,
+  index, rows, cell, gap, symbols, pool, register, renderSymbol, cellOverlay, highlight, changed, cellClass, anticipating, anticipationColor, bitmaps, live,
 }: {
   index: number; rows: number; cell: { w: number; h: number }; gap: number; symbols: number[]; pool: number[];
   register: (c: ReelCtl) => void; renderSymbol: Props["renderSymbol"]; cellOverlay?: Props["cellOverlay"];
   highlight?: Set<string> | null; changed: Set<string>; cellClass?: string; anticipating: boolean; anticipationColor: string;
+  bitmaps: { map: Map<number, SymbolBitmaps>; px: number; pad: number } | null;
+  live?: number[];
 }) {
   const [strip, setStrip] = useState<number[] | null>(null);
   const stripEl = useRef<HTMLDivElement>(null);
@@ -209,13 +247,19 @@ function Reel({
     onDone: null as null | (() => void),
     timer: 0 as unknown as ReturnType<typeof setTimeout>,
     lastTick: 0,
+    spin0: 0, // início do giro (para a aceleração)
+    kick: 0, // pequeno recuo para cima no arranque, como nas máquinas reais
+    mb: 0, // intensidade do desfoque de movimento (0..1)
   });
   const stepRef = useRef(cell.h + gap);
   stepRef.current = cell.h + gap;
 
   const apply = () => {
     const el = stripEl.current;
-    if (el) el.style.transform = `translate3d(0, ${-(FILL - st.current.pos) * stepRef.current}px, 0)`;
+    if (!el) return;
+    const s = st.current;
+    el.style.transform = `translate3d(0, ${(-(FILL - s.pos + s.kick) * stepRef.current).toFixed(2)}px, 0)`;
+    el.style.setProperty("--mb", s.mb.toFixed(3));
   };
 
   const finish = () => {
@@ -224,6 +268,8 @@ function Reel({
     clearTimeout(s.timer);
     s.mode = "idle";
     s.pos = FILL;
+    s.kick = 0;
+    s.mb = 0;
     apply();
     // atualiza o grid do pai e desmonta a fita no mesmo lote (sem piscar)
     const done = s.onDone;
@@ -238,10 +284,16 @@ function Reel({
   const frame = (now: number) => {
     const s = st.current;
     if (s.mode === "spin") {
-      // velocidade constante (linhas por ms), dando a volta na parte de enchimento
-      const speed = 0.024 / Math.max(0.5, speedFactor());
-      s.pos += speed * Math.min(48, now - (s.t0 || now));
+      if (!s.spin0) s.spin0 = now;
+      const el = now - s.spin0;
+      // arranque: recua um pouco para cima e acelera até a velocidade máxima
+      const vmax = 0.026 / Math.max(0.55, speedFactor());
+      s.kick = el < 260 ? Math.sin(Math.min(1, el / 130) * Math.PI) * 0.2 * (el < 130 ? 1 : (260 - el) / 130) : 0;
+      const ramp = el < 110 ? 0 : Math.min(1, (el - 110) / 260);
+      const v = vmax * ramp * ramp;
+      s.pos += v * Math.min(40, now - (s.t0 || now));
       s.t0 = now;
+      s.mb = Math.min(1, ramp * 1.15);
       const span = FILL - rows - 1;
       if (s.pos >= span) s.pos -= span;
       if (now - s.lastTick > 85) {
@@ -257,6 +309,8 @@ function Reel({
       const c3 = c1 + 1;
       const e = 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
       s.pos = s.from + (s.to - s.from) * e;
+      // o desfoque some conforme o rolo desacelera
+      s.mb = Math.max(0, 1 - t / 0.55);
       apply();
       if (t >= 1) finish();
       else s.raf = requestAnimationFrame(frame);
@@ -278,6 +332,9 @@ function Reel({
         s.mode = "spin";
         s.pos = 0;
         s.t0 = 0;
+        s.spin0 = 0;
+        s.kick = 0;
+        s.mb = 0;
         s.raf = requestAnimationFrame(frame);
       },
       land(final, durationMs, onDone) {
@@ -296,6 +353,7 @@ function Reel({
           if (s.mode !== "spin") s.pos = Math.max(0, FILL - 8);
           // garante pelo menos ~6 linhas de deslocamento até o pouso
           s.from = Math.min(s.pos, FILL - 6);
+          s.kick = 0;
           s.to = FILL;
           s.dur = Math.max(120, durationMs);
           s.mode = "land";
@@ -339,12 +397,24 @@ function Reel({
     <div className="relative" style={box}>
       <div className="absolute inset-0 overflow-hidden rounded-[inherit]">
         {strip ? (
-          <div ref={stripEl} className="absolute left-0 right-0 top-0 flex flex-col will-change-transform" style={{ filter: moving ? "blur(0.9px)" : undefined }}>
-            {strip.map((s, i) => (
-              <div key={i} style={{ height: cell.h, marginBottom: gap }} className={cls("relative grid place-items-center", cellClass)}>
-                <div style={{ width: cell.w * 0.86, height: cell.h * 0.86 }}>{renderSymbol(s, index, i)}</div>
-              </div>
-            ))}
+          <div ref={stripEl} className="absolute left-0 right-0 top-0 flex flex-col will-change-transform [backface-visibility:hidden]" style={{ ["--mb" as any]: 0 }}>
+            {strip.map((sym, i) => {
+              const bm = bitmaps?.map.get(sym);
+              const size = Math.min(cell.w, cell.h) * 0.86;
+              const full = bitmaps ? size * (1 + (2 * bitmaps.pad) / bitmaps.px) : size;
+              return (
+                <div key={i} style={{ height: cell.h, marginBottom: gap }} className={cls("relative grid place-items-center", cellClass)}>
+                  {bm?.sharp ? (
+                    <div className="relative shrink-0" style={{ width: full, height: full }}>
+                      <img src={bm.sharp} alt="" draggable={false} className="absolute inset-0 w-full h-full" style={{ opacity: "calc(1 - var(--mb) * 0.92)" }} />
+                      <img src={bm.blur} alt="" draggable={false} className="absolute inset-0 w-full h-full" style={{ opacity: "var(--mb)" }} />
+                    </div>
+                  ) : (
+                    <div style={{ width: size, height: size }}>{renderSymbol(sym, index, i)}</div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         ) : (
           <div className="absolute inset-0 flex flex-col" style={{ gap }}>
@@ -360,10 +430,18 @@ function Reel({
                     initial={morph ? { scale: 0.2, rotate: -25, opacity: 0 } : false}
                     animate={hl ? { scale: [1, 1.13, 1], rotate: 0, opacity: 1 } : { scale: 1, rotate: 0, opacity: 1 }}
                     transition={hl ? { repeat: Infinity, duration: 0.85, ease: "easeInOut" } : morph ? { type: "spring", damping: 11, stiffness: 260 } : { duration: 0.2 }}
-                    style={{ width: cell.w * 0.86, height: cell.h * 0.86 }}
-                    className={hl ? "drop-shadow-[0_0_12px_rgba(253,224,71,0.85)]" : ""}
+                    style={{ width: Math.min(cell.w, cell.h) * 0.86, height: Math.min(cell.w, cell.h) * 0.86 }}
+                    className={cls("grid place-items-center", hl && "drop-shadow-[0_0_12px_rgba(253,224,71,0.85)]")}
                   >
-                    {renderSymbol(s, index, row)}
+                    {(() => {
+                      // parado: usa o mesmo bitmap do giro (troca sem "piscar" e muito mais leve)
+                      const bm = bitmaps?.map.get(s);
+                      if (bm?.sharp && !live?.includes(s)) {
+                        const full = Math.min(cell.w, cell.h) * 0.86 * (1 + (2 * bitmaps!.pad) / bitmaps!.px);
+                        return <img src={bm.sharp} alt="" draggable={false} className="shrink-0 max-w-none" style={{ width: full, height: full }} />;
+                      }
+                      return renderSymbol(s, index, row);
+                    })()}
                   </motion.div>
                   {morph && (
                     <motion.div

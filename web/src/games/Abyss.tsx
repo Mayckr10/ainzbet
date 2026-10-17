@@ -176,6 +176,8 @@ export default function Abyss() {
           <div className="rounded-[24px] bg-[#04142b]/95 p-2 aspect-[5/3.1]">
             <Reels
               ref={reels}
+              theme="abyss"
+              live={[0]}
               reels={5}
               rows={3}
               initial={initial.current}

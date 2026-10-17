@@ -115,7 +115,8 @@ export default function Forge() {
         </div>
         <div id="forge-reels" className="w-full max-w-[340px] rounded-[28px] p-[3px]" style={{ background: "linear-gradient(180deg, #fde68a, #b45309 50%, #7f1d1d)" }}>
           <div className="rounded-[25px] bg-[#1c0a06] p-3 aspect-square">
-            <Reels ref={reels} reels={3} rows={3} initial={initial.current} pool={POOL} gap={6} highlight={hl} cellClass="rounded-2xl bg-gradient-to-b from-orange-200/[0.08] to-transparent" renderSymbol={(s) => <SymbolArt art={FORGE_ART[s]} />}>
+            <Reels ref={reels}
+              theme="forge" reels={3} rows={3} initial={initial.current} pool={POOL} gap={6} highlight={hl} cellClass="rounded-2xl bg-gradient-to-b from-orange-200/[0.08] to-transparent" renderSymbol={(s) => <SymbolArt art={FORGE_ART[s]} />}>
               <Paylines lines={LINES} active={lines} reels={3} rows={3} colors={["#fde047", "#fb923c", "#f87171", "#fdba74", "#facc15"]} />
             </Reels>
           </div>

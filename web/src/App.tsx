@@ -48,7 +48,7 @@ export default function App() {
         // no navegador (dev), ?game=<id> ou ?screen=store abre direto
         const q = new URLSearchParams(location.search);
         const sp = startParam() ?? (q.get("game") ? `game_${q.get("game")}` : null);
-        const screen = q.get("screen");
+        const screen = sp === "store" ? "store" : q.get("screen");
         if (screen === "store" || screen === "ranking" || screen === "profile" || screen === "settings" || screen === "fair") nav.push({ name: screen });
         if (sp?.startsWith("game_")) {
           const id = sp.slice(5);

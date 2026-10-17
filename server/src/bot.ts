@@ -2,6 +2,7 @@ import { Bot, InlineKeyboard } from "grammy";
 import type { InlineQueryResultArticle } from "grammy/types";
 import { config, miniAppLink } from "./config.js";
 import { applyPayment, adminStats, markRefunded } from "./service.js";
+import { pool } from "./db.js";
 import { findProduct } from "./store.js";
 import { GAME_NAMES } from "./games/registry.js";
 
@@ -9,6 +10,7 @@ export const bot = new Bot(config.botToken || "0:dev");
 export let botUsername = process.env.BOT_USERNAME ?? "";
 
 const fmt = (n: number) => Math.floor(n).toLocaleString("pt-BR");
+const escapeHtml = (s: string) => s.replace(/[<>&]/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;" })[c]!);
 
 /** Card que aparece quando alguém digita @seubot em qualquer chat. */
 function lobbyCard(id: string, title: string, description: string, start?: string): InlineQueryResultArticle {
@@ -42,11 +44,71 @@ export function setupBot() {
     await ctx.answerInlineQuery(results.slice(0, 20), { cache_time: 30, is_personal: false });
   });
 
-  bot.command("start", async (ctx) => {
+  /** Teclado principal: abrir aqui, mandar o cassino para um grupo (modo inline) ou escolher um jogo. */
+  const mainKeyboard = () =>
+    new InlineKeyboard()
+      .url("🎰 Jogar agora", miniAppLink(undefined, botUsername))
+      .row()
+      .switchInlineChosen("👥 Enviar para um grupo", { query: "", allow_group_chats: true, allow_user_chats: true, allow_channel_chats: false, allow_bot_chats: false })
+      .row()
+      .switchInlineCurrent("🎮 Escolher um jogo", "")
+      .text("🏆 Ranking", "menu:ranking")
+      .row()
+      .url("⭐ Loja de Estrelas", miniAppLink("store", botUsername));
+
+  const welcome = () =>
+    `🎰 <b>AinzBet</b>\n\n` +
+    `20 jogos com fichas virtuais: slots até <b>50.000x</b>, roleta, blackjack, crash, mines e mais.\n\n` +
+    `👥 <b>Para jogar no grupo:</b> toque em <i>Enviar para um grupo</i>, escolha o grupo e envie o card. ` +
+    `Ou digite <code>@${botUsername}</code> na caixa de mensagem de qualquer chat.\n\n` +
+    `🎁 Novos jogadores ganham <b>${fmt(config.startingBalance)} fichas</b>.`;
+
+  bot.command(["start", "menu", "cassino", "jogar"], async (ctx) => {
+    await ctx.reply(welcome(), { parse_mode: "HTML", reply_markup: mainKeyboard() });
+  });
+
+  // /grupo: atalho direto para escolher o grupo e postar o cassino via inline
+  bot.command(["grupo", "inline", "compartilhar"], async (ctx) => {
+    await ctx.reply("👥 Escolha o grupo onde o cassino vai abrir:", {
+      reply_markup: new InlineKeyboard()
+        .switchInlineChosen("👥 Escolher grupo", { query: "", allow_group_chats: true, allow_user_chats: true, allow_channel_chats: false, allow_bot_chats: false })
+        .row()
+        .switchInlineChosen("🚀 Enviar o Crash", { query: "crash", allow_group_chats: true, allow_user_chats: true })
+        .switchInlineChosen("🔮 Enviar o Oráculo", { query: "oráculo", allow_group_chats: true, allow_user_chats: true }),
+    });
+  });
+
+  bot.command("ajuda", async (ctx) => {
     await ctx.reply(
-      `🎰 <b>AinzBet</b>\n\nPara jogar em um grupo, digite <code>@${botUsername}</code> na caixa de mensagem e escolha o cassino. Ou jogue aqui mesmo:`,
-      { parse_mode: "HTML", reply_markup: new InlineKeyboard().url("🎰 Abrir cassino", miniAppLink(undefined, botUsername)) },
+      "ℹ️ <b>Comandos</b>\n\n" +
+        "/start · menu principal\n" +
+        "/jogar · abrir o cassino\n" +
+        "/grupo · enviar o cassino para um grupo\n" +
+        "/ranking · melhores jogadores\n" +
+        "/termos · termos de uso\n" +
+        "/paysupport · suporte a pagamentos\n\n" +
+        `No grupo, digite <code>@${botUsername}</code> + nome do jogo (ex.: <code>@${botUsername} roleta</code>).`,
+      { parse_mode: "HTML" },
     );
+  });
+
+  const rankingText = async () => {
+    const r = await pool.query("SELECT first_name, balance FROM users ORDER BY balance DESC LIMIT 10");
+    const medals = ["🥇", "🥈", "🥉"];
+    return (
+      "🏆 <b>Ranking global</b>\n\n" +
+      (r.rows.length
+        ? r.rows.map((u: any, i: number) => `${medals[i] ?? `${i + 1}.`} ${escapeHtml(u.first_name)} · ${fmt(u.balance)} fichas`).join("\n")
+        : "Ninguém jogou ainda. Seja o primeiro!") +
+      "\n\n<i>O ranking de cada grupo aparece dentro do cassino.</i>"
+    );
+  };
+  bot.command("ranking", async (ctx) => {
+    await ctx.reply(await rankingText(), { parse_mode: "HTML", reply_markup: new InlineKeyboard().url("🎰 Abrir cassino", miniAppLink(undefined, botUsername)) });
+  });
+  bot.callbackQuery("menu:ranking", async (ctx) => {
+    await ctx.answerCallbackQuery();
+    await ctx.reply(await rankingText(), { parse_mode: "HTML" });
   });
 
   bot.command(["termos", "terms"], async (ctx) => {
@@ -137,7 +199,11 @@ export async function initBot() {
   await bot.init();
   botUsername = bot.botInfo.username;
   await bot.api.setMyCommands([
-    { command: "start", description: "Abrir o cassino" },
+    { command: "start", description: "Menu principal" },
+    { command: "jogar", description: "Abrir o cassino" },
+    { command: "grupo", description: "Enviar o cassino para um grupo" },
+    { command: "ranking", description: "Melhores jogadores" },
+    { command: "ajuda", description: "Comandos e como jogar" },
     { command: "termos", description: "Termos de uso" },
     { command: "paysupport", description: "Suporte a pagamentos" },
   ]);

@@ -1,6 +1,7 @@
 import type { AuthContext, TgUser } from "./auth.js";
 import { config } from "./config.js";
 import { tx, pool, type Tx } from "./db.js";
+import { notifyAdmin } from "./notify.js";
 import { newClientSeed, newServerSeed, Rng, sha256 } from "./fair.js";
 import { GAMES } from "./games/registry.js";
 import { GameError } from "./games/types.js";
@@ -36,7 +37,7 @@ const RESCUE_COOLDOWN = 3600_000;
 /* ------------------------------------------------------------------ usuários */
 
 /** Cria (se preciso) e trava a linha do usuário para a transação atual. */
-export async function lockUser(c: Tx, u: TgUser): Promise<UserRow> {
+export async function lockUser(c: Tx, u: TgUser, ctx?: AuthContext): Promise<UserRow> {
   const found = await c.query<UserRow>("SELECT * FROM users WHERE id = $1 FOR UPDATE", [u.id]);
   if (found.rows[0]) {
     const row = found.rows[0];
@@ -50,14 +51,22 @@ export async function lockUser(c: Tx, u: TgUser): Promise<UserRow> {
   const ins = await c.query<UserRow>(
     `INSERT INTO users (id, first_name, username, photo_url, balance, server_seed, server_seed_hash, client_seed)
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-     ON CONFLICT (id) DO UPDATE SET first_name = EXCLUDED.first_name
+     ON CONFLICT (id) DO NOTHING
      RETURNING *`,
     [u.id, [u.first_name, u.last_name].filter(Boolean).join(" "), u.username ?? null, u.photo_url ?? null, config.startingBalance, s.seed, s.hash, newClientSeed()],
   );
+  if (!ins.rows[0]) {
+    // outra requisição simultânea criou o jogador primeiro: só trava a linha (sem bônus nem aviso em dobro)
+    const other = await c.query<UserRow>("SELECT * FROM users WHERE id = $1 FOR UPDATE", [u.id]);
+    return other.rows[0];
+  }
   await c.query("INSERT INTO transactions (user_id, amount, reason, balance_after) VALUES ($1, $2, 'welcome', $2)", [u.id, config.startingBalance]);
+  // aviso de jogador novo para o administrador (só depois que a criação for confirmada)
+  const total = (await c.query<{ n: number }>("SELECT count(*)::int AS n FROM users")).rows[0].n;
+  c.afterCommit?.push(() => notifyNewPlayer(u, ctx, total));
   // trava a linha recém-criada
   const again = await c.query<UserRow>("SELECT * FROM users WHERE id = $1 FOR UPDATE", [u.id]);
-  return again.rows[0] ?? ins.rows[0];
+  return again.rows[0];
 }
 
 /** Credita (valor positivo) ou debita (negativo) o saldo, registrando a transação. */
@@ -111,7 +120,25 @@ export function publicUser(u: UserRow) {
 }
 
 export async function getMe(auth: AuthContext) {
-  return tx(async (c) => publicUser(await lockUser(c, auth.user)));
+  return tx(async (c) => publicUser(await lockUser(c, auth.user, auth)));
+}
+
+const esc = (s: string) => s.replace(/[<>&]/g, (ch) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;" })[ch]!);
+
+function notifyNewPlayer(u: TgUser, ctx: AuthContext | undefined, total: number) {
+  const name = esc([u.first_name, u.last_name].filter(Boolean).join(" ") || "Sem nome");
+  const where = ctx?.chatInstance
+    ? `um grupo (${ctx.chatType ?? "chat"})`
+    : ctx?.chatType === "sender" || ctx?.chatType === "private"
+      ? "o privado"
+      : "o bot";
+  notifyAdmin(
+    `🆕 <b>Novo jogador</b>\n\n` +
+      `👤 <a href="tg://user?id=${u.id}">${name}</a>${u.username ? ` (@${esc(u.username)})` : ""}\n` +
+      `🆔 <code>${u.id}</code>${u.language_code ? ` · 🌐 ${esc(u.language_code)}` : ""}${(u as any).is_premium ? " · ⭐ Premium" : ""}\n` +
+      `📍 Entrou por ${where}${ctx?.startParam ? ` · link: <code>${esc(ctx.startParam)}</code>` : ""}\n\n` +
+      `👥 Total de jogadores: <b>${total.toLocaleString("pt-BR")}</b>`,
+  );
 }
 
 export async function claimBonus(auth: AuthContext, kind: "daily" | "rescue") {

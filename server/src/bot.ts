@@ -3,6 +3,7 @@ import type { InlineQueryResultArticle } from "grammy/types";
 import { config, miniAppLink } from "./config.js";
 import { applyPayment, adminStats, markRefunded } from "./service.js";
 import { pool } from "./db.js";
+import { setNotifier } from "./notify.js";
 import { findProduct } from "./store.js";
 import { GAME_NAMES } from "./games/registry.js";
 
@@ -197,6 +198,9 @@ export function setupBot() {
 export async function initBot() {
   if (!config.botToken) return;
   await bot.init();
+  if (config.adminId) {
+    setNotifier((html) => bot.api.sendMessage(config.adminId, html, { parse_mode: "HTML", link_preview_options: { is_disabled: true } }));
+  }
   botUsername = bot.botInfo.username;
   await bot.api.setMyCommands([
     { command: "start", description: "Menu principal" },

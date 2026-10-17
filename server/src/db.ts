@@ -12,19 +12,27 @@ export const pool = new pg.Pool({
   max: 10,
 });
 
-export type Tx = pg.PoolClient;
+export type Tx = pg.PoolClient & { afterCommit?: (() => void)[] };
 
+/** Transação; funções em `c.afterCommit` rodam só depois do COMMIT (ex.: avisos). */
 export async function tx<T>(fn: (c: Tx) => Promise<T>): Promise<T> {
-  const c = await pool.connect();
+  const c = (await pool.connect()) as Tx;
+  c.afterCommit = [];
   try {
     await c.query("BEGIN");
     const r = await fn(c);
     await c.query("COMMIT");
+    for (const f of c.afterCommit) {
+      try {
+        f();
+      } catch {}
+    }
     return r;
   } catch (e) {
     await c.query("ROLLBACK").catch(() => {});
     throw e;
   } finally {
+    c.afterCommit = [];
     c.release();
   }
 }
